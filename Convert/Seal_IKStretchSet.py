@@ -119,9 +119,8 @@ def IKNodeConnection(dict_, joints_, divNumList):
         dist_ = db.getAttr('distance')
         dict_['ml'][i].attr('i2').set(dist_)
         dict_['ml'][i].o >> joints_[1:][i].tx
-        print(joints_[1:][i])
-        pm.addAttr(joints_[1:][i],ln="SquashScaleY", at='double',  dv=0, k=1)
-        pm.addAttr(joints_[1:][i],ln="SquashScaleZ", at='double',  dv=0, k=1)
+        addAttr(joints_[1:][i],ln="SquashScaleY", at='double',  dv=0, k=1)
+        addAttr(joints_[1:][i],ln="SquashScaleZ", at='double',  dv=0, k=1)
         dict_['md2'][i].oy >> joints_[1:][i].SquashScaleY
         dict_['md2'][i].oz >> joints_[1:][i].SquashScaleZ
     

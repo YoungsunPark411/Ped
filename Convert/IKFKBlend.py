@@ -1,3 +1,4 @@
+# -*- coding: cp949 -*-
 from pymel.core import *
 
 def getChildren_(object_, type_=None):
@@ -40,12 +41,12 @@ def IKFKBlend(object_):
         FKChain[i].s >> BC_.color1
         IKChain[i].r >> PB_.ir1
         IKChain[i].t >> PB_.it1
-        IKChain[i].SquashScaleY >> BC_.color2G
-        IKChain[i].SquashScaleZ >> BC_.color2B
+        #IKChain[i].SquashScaleY >> BC_.color2G
+        #IKChain[i].SquashScaleZ >> BC_.color2B
 
         PB_.outTranslate >> drv.t
         PB_.outRotate >> drv.r
-        BC_.output >> OrigChain[i].s
+        #BC_.output >> OrigChain[i].s
 
         switch.IKFK>>BC_.blender
         switch.IKFK >> PB_.weight
@@ -56,7 +57,7 @@ def IKFKBlend(object_):
 
 
 '''
-# ì²«ë²ˆì§¸ FK ìµœìƒìœ„ ì¡°ì¸íŠ¸, IK ìµœìƒìœ„ ì¡°ì¸íŠ¸, Drv ìµœìƒìœ„ ì¡°ì¸íŠ¸, IKFK ìŠ¤ìœ„ì¹˜ ì„ íƒí›„ ì‹¤í–‰í•´ì£¼ì„¸ìš”
+# Ã¹¹øÂ° FK ÃÖ»óÀ§ Á¶ÀÎÆ®, IK ÃÖ»óÀ§ Á¶ÀÎÆ®, Drv ÃÖ»óÀ§ Á¶ÀÎÆ®, IKFK ½ºÀ§Ä¡ ¼±ÅÃÈÄ ½ÇÇàÇØÁÖ¼¼¿ä
 sel = ls(sl=1,r=1,fl=1)
 IKFKBlend(sel)
 sel = ls(sl=1)[0]
