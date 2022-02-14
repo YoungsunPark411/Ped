@@ -285,7 +285,6 @@ def ArcCtrlMatch(DrvJnt,UpIKCrv,DnIKCrv,ArcPointPos,bs):
             pm.delete(pm.pointConstraint(DrvJnt[0],DrvJnt[1],grp_[0],mo=0))
             #gn.Mcon(UpIKCrv,grp_[0],t=1, r=0, s=0, sh=1, mo=1, pvtCalc=1)
             tc=pm.tangentConstraint(UpIKCrv,grp_,wut=2,wuo=DrvJnt[0])
-            print(tc)
             tg=grp_[0]
             src=UpIKCrv
             pc=CurveToPC(src,tg)
@@ -308,9 +307,7 @@ def ArcCtrlMatch(DrvJnt,UpIKCrv,DnIKCrv,ArcPointPos,bs):
             src=DnIKCrv
             pc=CurveToPC(src,tg)
             bs.outputGeometry[1]>>pc.inputCurve
-            print('ok')
             bs.outputGeometry[1]>>tc2.target[0].targetGeometry
-            print('ok2')
     return ArcCtrlList
     
 
@@ -593,175 +590,164 @@ def Spline(sel):
 #         result=RootCtrl[0]
 #     return result
 
-#스트레치저장값만들기 (원래전체길이,원래Up길이,원래Dn길이)
-
-def Divide(numerator, denominator): 
-    nm=str(numerator)
-    if 'All' in nm:
-        name='All'        
-    elif 'Up' in nm:
-        name='Up'
-    elif 'Dn' in nm:
-        name='Dn'
-    elif 'PV' in nm:
-        name='PV'
-
-    RatioMD = pm.createNode('multiplyDivide', n='%s%s%sRatioMD'%name)
-    RatioMD.operation.set(2)
-    numerator.distance >> RatioMD.input1X
-    attr_='%sLength'%name
-    denominator.attr(attr_) >> RatioMD.input2X
-    
-    return RatioMD
-   
-
-
-
-def Stretch(UpDB,DnDB,IKCtrl,IKJnt):
-    pos1=IKJnt[0]
-    pos3=pm.createNode('transform', n=IKJnt[-1].replace('Jnt','StretchPos'))
-    IKSubCtrl=pm.PyNode('%s%sIKSubCtrl'%(side,ob))
-    pm.pointConstraint(IKSubCtrl,pos3)
-    #pm.parent(pos3,EtcGrp)
-    
-   
-    AllDB = pm.createNode('distanceBetween', n='%s%sAllLengthDB'%(side,ob))
-    print('ok')
-    pos1.t >> AllDB.point1
-    pos3.t >> AllDB.point2
-    SaveLen = RigGrp
-    pm.addAttr(SaveLen,ln="AllLength", at='double', dv=0, k=1)
-    pm.addAttr(SaveLen, ln="UpLength", at='double', dv=0, k=1)
-    pm.addAttr(SaveLen, ln="DnLength", at='double', dv=0, k=1)
-    UpDB=pm.PyNode('%s%sArcUpDB'%(side,ob))
-    DnDB = pm.PyNode('%s%sArcDnDB'%(side,ob))
-    SaveLen.AllLength.set(AllDB.distance.get())
-    SaveLen.UpLength.set(UpDB.distance.get())
-    SaveLen.DnLength.set(DnDB.distance.get())
-
-    # 전체비율
-    AllRatioMD = Divide(AllDB, SaveLen)
-
-    # PV와 Pos 길이
-    PVPos = pm.createNode('transform', n='%s%sPVPos'%(side,ob))
-    PVCtrl = pm.PyNode('%s%sPoleVectorCtrl'%(side,ob))
-    pm.pointConstraint(PVCtrl, PVPos, mo=0)
-    pm.parent(PVPos, EtcGrp)
-    UpPVDB = pm.createNode('distanceBetween', n='%s%sUpPVRatioDB'%(side,ob))
-    pos1.t >> UpPVDB.point1
-    PVPos.t >> UpPVDB.point2
-    DnPVDB = pm.createNode('distanceBetween', n='%s%sDnPVRatioDB'%(side,ob))
-    pos3.t >> DnPVDB.point1
-    PVPos.t >> DnPVDB.point2
-
-    # PV와 Pos 비율구하기
-    UpPVRatioMD = Divide(UpPVDB, SaveLen)
-    DnPVRatioMD = Divide(DnPVDB, SaveLen)
-
-    # 부분비율구하기
-    UpRatioMD = Divide(UpDB, SaveLen)
-    DnRatioMD = Divide(DnDB, SaveLen)
-
-    #스트레치 스위치
-    STSwitchBA=pm.createNode('blendTwoAttr', n='%s%sSTSwitchBA'%(side,ob))
-    STSwitchBA.input[0].set(1)
-    AllRatioMD.outputX>>STSwitchBA.input[1]
-    STSwitchMDL = pm.createNode('multDoubleLinear', n='%s%sSTSwitchMDL'%(side,ob))
-    STSwitchMDL.input2.set(0.1)
-    IKCtrl.Stretch >> STSwitchMDL.input1
-    STSwitchMDL.output>>STSwitchBA.attributesBlender
-
-    #DnPV 스트레치 스위치
-    DnPVSwitchBA = pm.createNode('blendTwoAttr', n='%s%sDnPVSwitchBA'%(side,ob))
-    STSwitchBA.output>>DnPVSwitchBA.input[0]
-    DnPVRatioMD.outputX>>DnPVSwitchBA.input[1]
-    DnPVSwitchMDL = pm.createNode('multDoubleLinear', n='%s%sSTDnPVSwitchL'%(side,ob))
-    DnPVSwitchMDL.input2.set(0.1)
-    IKCtrl.PVStretch >> DnPVSwitchMDL.input1
-    DnPVSwitchMDL.output >> DnPVSwitchBA.attributesBlender
-
-    # UpPV 스트레치 스위치
-    UpPVSwitchBA = pm.createNode('blendTwoAttr', n='%s%sUpPVSwitchBA'%(side,ob))
-    STSwitchBA.output >> UpPVSwitchBA.input[0]
-    UpPVRatioMD.outputX >> UpPVSwitchBA.input[1]
-    UpPVSwitchMDL = pm.createNode('multDoubleLinear', n='%s%sSTUpPVSwitchL'%(side,ob))
-    UpPVSwitchMDL.input2.set(0.1)
-    IKCtrl.PVStretch >> UpPVSwitchMDL.input1
-    UpPVSwitchMDL.output >> UpPVSwitchBA.attributesBlender
-
-    # Dn슬라이드 스트레치 스위치
-    DnSlideSwitchMDL = pm.createNode('multDoubleLinear', n='%s%sDnSlideSwitchMDL'%(side,ob))
-    DnSlideSwitchMDL.input2.set(0.1)
-    IKCtrl.DnSlide >> DnSlideSwitchMDL.input1
-    DnSlideSwitchADL = pm.createNode('addDoubleLinear', n='%s%sDnSlideSwitchADL'%(side,ob))
-    DnSlideSwitchADL.input2.set(1)
-    DnSlideSwitchMDL.output >> DnSlideSwitchADL.input1
-    DnSlideXDnPVMDL = pm.createNode('multDoubleLinear', n='%s%sDnSlideXDnPVMDL'%(side,ob))
-    DnSlideSwitchADL.output >> DnSlideXDnPVMDL.input1
-    DnPVSwitchBA.output >> DnSlideXDnPVMDL.input2
-
-    # Up슬라이드 스트레치 스위치
-    UpSlideSwitchMDL = pm.createNode('multDoubleLinear', n='%s%sUpSlideSwitchMDL'%(side,ob))
-    UpSlideSwitchMDL.input2.set(0.1)
-    IKCtrl.UpSlide >> UpSlideSwitchMDL.input1
-    UpSlideSwitchADL = pm.createNode('addDoubleLinear', n='%s%sUpSlideSwitchADL'%(side,ob))
-    UpSlideSwitchADL.input2.set(1)
-    UpSlideSwitchMDL.output >> UpSlideSwitchADL.input1
-    UpSlideXUpPVMDL = pm.createNode('multDoubleLinear', n='%s%sUpSlideXUpPVMDL'%(side,ob))
-    UpSlideSwitchADL.output >> UpSlideXUpPVMDL.input1
-    UpPVSwitchBA.output >> UpSlideXUpPVMDL.input2
-
-    #Dn 스트레치 최종 연결
-    DnSTCD=pm.createNode('condition', n='%s%sDnSTCD'%(side,ob))
-    DnSTCD.secondTerm.set(1)
-    DnSTCD.operation.set(2)
-    DnSlideXDnPVMDL.output>>DnSTCD.firstTerm
-    DnSlideXDnPVMDL.output >> DnSTCD.colorIfTrueR
-    DnSTCD.colorIfFalseR.set(1)
-    DnSTFinalMDL = pm.createNode('multDoubleLinear', n='%s%sDnSTFinalMDL'%(side,ob))
-    DnSTCD.outColorR>>DnSTFinalMDL.input1
-    SaveLen.DnLength>>DnSTFinalMDL.input2
-    DnSTFinalMDL.output >> IKJnt[-1].translateX
-
-    # Up 스트레치 최종 연결
-    UpSTCD = pm.createNode('condition', n='%s%sUpSTCD'%(side,ob))
-    UpSTCD.secondTerm.set(1)
-    UpSTCD.operation.set(2)
-    UpSlideXUpPVMDL.output >> UpSTCD.firstTerm
-    UpSlideXUpPVMDL.output >> UpSTCD.colorIfTrueR
-    UpSTCD.colorIfFalseR.set(1)
-    UpSTFinalMDL = pm.createNode('multDoubleLinear', n='%s%sUpSTFinalMDL'%(side,ob))
-    UpSTCD.outColorR >> UpSTFinalMDL.input1
-    SaveLen.UpLength >> UpSTFinalMDL.input2
-    UpSTFinalMDL.output >> IKJnt[1].translateX
-    print('okok')
+#IKJnt의 스트레치 
 
 def distancBetween_(name_):
-    return shadingNode('distanceBetween', au=1, n='{}DB'.format(name_))
+    return pm.shadingNode('distanceBetween', au=1, n='{}DB'.format(name_))
 
-def transform_(name_):
-    return shadingNode('transform', au=1, n='{}Pos'.format(name_))
+def blendTwoAttr_(name_):
+    return pm.shadingNode('blendTwoAttr', au=1, n='{}BA'.format(name_))
+
+def multiplyDivide_(name_):
+    return pm.shadingNode('multiplyDivide', au=1, n='{}MD'.format(name_))
+
+def multDoubleLinear_(name_):
+    return pm.shadingNode('multDoubleLinear', au=1, n='{}MDL'.format(name_))
     
-def StretchPractice(IKJnt):
+def transform_(name_):
+    return pm.shadingNode('transform', au=1, n='{}Pos'.format(name_))
+    
+def addDoubleLinear_(name_):
+    return pm.shadingNode('addDoubleLinear', au=1, n='{}AL'.format(name_))
+
+def blendColors_(name_):
+    return pm.shadingNode('blendColors', au=1, n='{}BC'.format(name_))
+    
+def condition_(name_):
+    return pm.shadingNode('condition', au=1, n='{}CD'.format(name_))
+
+ #두 포스 사이 길이 구하기 
+def PosLen(pos1,pos2,DB):
+    pos1_=pm.PyNode(pos1)
+    pos2_=pm.PyNode(pos2)
+    pos1_.t>>DB.point1
+    pos2_.t>>DB.point2
+    return DB
+#컨트롤 채널과 노드 연결
+def MDConnect(Ctrl,AttrName):
+    md_=multDoubleLinear_(side+ob+AttrName)
+    md_.input2.set(0.1)
+    pm.connectAttr(Ctrl+'.%s'%AttrName,md_.input1)
+    return md_
+    
+    
+def IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl):
+    #위쪽, 아래쪽, 전체 길이 구하기 
     posList=[]
     for x in IKJnt:
-        posMake=transform_(x.replace('Jnt','Pos'))
+        posMake=transform_(x.replace('Jnt',''))
         posList.append(posMake)
         pm.delete(pm.parentConstraint(x,posMake))
     pos1,pos2,pos3=posList[0],posList[1],posList[2]
-    pm.group(posList,n='%s%sPosGrp'%(side,ob))
-    
-    UpLen=distancBetween_('%s%sUpLen'%(side,ob))
-    DnLen=distancBetween_('%s%sDnLen'%(side,ob))
-    
-    pos1.t>>UpLen.point1
-    pos2.t>>UpLen.point2
-    pos2.t>>DnLen.point1
-    pos3.t>>DnLen.point2
+    MovePos=pm.duplicate(pos3,n=pos3.replace('Pos','MovePos'))[0]
+    pm.parentConstraint(IKCtrl,MovePos)
+    pm.group(posList,MovePos,n='%s%sPosGrp'%(side,ob))
+    UpLenDB=distancBetween_('%s%sUpLen'%(side,ob))
+    DnLenDB=distancBetween_('%s%sDnLen'%(side,ob))
+    AllLenDB=distancBetween_('%s%sAllLen'%(side,ob))
+    UpLen=PosLen(pos1,pos2,UpLenDB)
+    DnLen=PosLen(pos2,pos3,DnLenDB)
+    AllLen=PosLen(pos1,MovePos,AllLenDB)
 
-    IKCtrl=pm.PyNode('%s%sIKCtrl'%(side,ob))
-    Stretch(UpLen,DnLen,IKCtrl,IKJnt)
+    adl=addDoubleLinear_('%s%sUpNDnLen'%(side,ob))
+    UpLen.distance>>adl.input1
+    DnLen.distance>>adl.input2
+    
+    #디폴트 전체 길이구하기
+    # AlldefLen=AllLen.attr('distance').get()
+    # pm.addAttr(MovePos, ln="DefLength", at='double', dv=0, k=1)
+    # MovePos.DefLength.set(AlldefLen)
+    # pm.addAttr(MovePos, ln="UpDnLength", at='double', dv=0, k=1)
+    # UpNDnLength=UpLen.attr('distance').get()+DnLen.attr('distance').get()
+    # MovePos.UpDnLength.set(UpNDnLength)
 
+    
+    bc=blendColors_('%s%sAllStretch'%(side,ob))
+    AllLen.distance>>bc.color1R
+    adl.o>>bc.color2R
+    
+    #갭 구하기
+    gap_md=multiplyDivide_('%s%sStretchGap'%(side,ob))
+    gap_md.operation.set(2)
+    AllLen.distance>>gap_md.input1X
+    adl.o>>gap_md.input2X
+    gap_md.outputX>>bc.color1G
+    
+    
+    #md=multiplyDivide_('%s%sAllStretchNormal'%(side,ob))
+    #md.operation.set(2)
+    #bc.outputR>>md.i1x
+    #bc.color2.color2R>>md.i2x
+    cd=condition_('%s%sAllLen'%(side,ob))
+    cd.operation.set(2)
+    
+    cd_set=condition_('%s%sRatioSet'%(side,ob))
+    cd_set.operation.set(5)
+    cd_set.secondTerm.set(1)
+    cd_set.colorIfTrueR.set(1)
+    bc.outputG>>cd_set.firstTerm
+    bc.outputG>>cd_set.colorIfFalseR
+    
+    cd_set.outColorR>>cd.colorIfTrueR
+    bc.outputR>>cd.firstTerm
+    adl.o>>cd.secondTerm
+    
+    #폴벡터 스트레치 
+    PVPos=transform_('%s%sPVStretch'%(side,ob))
+    pm.pointConstraint(PoleVectorCtrl,PVPos,mo=0)
+    PVUpLenDB=distancBetween_('%s%sPVUpLen'%(side,ob))
+    PVDnLenDB=distancBetween_('%s%sPVDnLen'%(side,ob))
+    PVUpLen=PosLen(pos1,PVPos,PVUpLenDB)
+    PVDnLen=PosLen(PVPos,pos3,PVDnLenDB)
+    
+    
+    PVLens=[PVUpLen,PVDnLen]
+    Lens=[UpLen,DnLen]
+    JntConnectList=[]
+    for x in range(len(PVLens)):
+        name_=PVLens[x].replace('PV','').replace('LenDB','')
+        
+        pv_md=multiplyDivide_('%sPVStretchNormal'%name_)
+        pv_md.operation.set(2)
+        PVLens[x].distance>>pv_md.i1x
+        Lens[x].distance>>pv_md.i2x
+        
+        ba=blendTwoAttr_('%sStretch'%name_)
+        cd.outColorR>>ba.input[0]
+        pv_md.ox>>ba.input[1]
+        baMD=MDConnect(IKCtrl,'PVStretch')
+        baMD.o>>ba.attributesBlender
+        
+        #슬라이드 
+        s_mdl=multDoubleLinear_('%sSlideFilter'%name_)    
+        s_adl=addDoubleLinear_('%sSlideFilter'%name_)
+        s_mdl.input2.set(0.1)
+        s_adl.input2.set(1)
+        st_mdl=multDoubleLinear_('%sStretchFilter'%name_) 
+
+        pm.connectAttr(IKCtrl+'.%sSlide'%name_.replace(side+ob,''),s_mdl+'.input1')  
+        s_mdl.o>>s_adl.input1
+        s_adl.o>>st_mdl.input2
+        
+        ba.o>>st_mdl.input1
+        
+        #모든 스트레치 값 합치기 
+        All_adl=multDoubleLinear_('%sStretchOutput'%name_)
+        jointTrans=IKJnt[1+x].attr('tx').get()
+        All_adl.input2.set(jointTrans)
+        st_mdl.o>>All_adl.input1
+        
+        
+        JntConnectList.append(All_adl)
+        
+    UptretchOutputMDL=JntConnectList[0]
+    DntretchOutputMDL=JntConnectList[1]
+    
+    UptretchOutputMDL.o>>IKJnt[1].tx
+    DntretchOutputMDL.o>>IKJnt[2].tx
+    
+    md_=MDConnect(IKCtrl,'Stretch')
+    md_.o>>bc.blender
 
 # def TwistUpEnd():
 #     #TwistUpPos1 만들기
@@ -878,7 +864,9 @@ def ArmLegRig(JntSel):
     DnArcJntSel=[f_DnArcJnt,e_DnArcJnt]
     DnStSq=Spline(DnArcJntSel)
     
-    StretchPractice(IKJnt)
+    IKCtrl=IKCtrls[0][0]
+    PoleVectorCtrl=IKCtrls[1]
+    IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl)
 
     
     

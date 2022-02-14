@@ -1,12 +1,6 @@
 # -*- coding: cp949 -*-
 from pymel.core import *
 
-def get_transform(object_):
-    _name = object_.name()
-    trans = xform(_name, q=1, ws=1, rp=1 )
-    rot = xform(_name, q=1, ws=1, ro=1 )
-    return trans, rot
-
 def distancBetween_(name_):
     return shadingNode('distanceBetween', au=1, n='{}DB'.format(name_))
 
@@ -31,14 +25,6 @@ def blendColors_(name_):
 def condition_(name_):
     return shadingNode('condition', au=1, n='{}CD'.format(name_))
 
-def createNodes(name_, names_, crvs_, divNumList):
-    names_ = names_[1:]
-    dict_ = {}
-    dict_['db'] = distancBetween_('{0}DB'.format(name_))
-    dict_['al'] = addDoubleLinear_('{0}DefAllLenADL'.format(name_))
-    dict_['bc'] = blendColors_('{0}BC'.format(name_))
-
-    return dict_
  #두 포스 사이 길이 구하기 
 def PosLen(pos1,pos2):
     Len=distancBetween_('%s%sUpLen'%(side,ob))
@@ -122,79 +108,20 @@ def IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl):
         #모든 스트레치 값 합치기 
         All_adl=multDoubleLinear_('%sStretchOutputMDL'%name_)
         jointTrans=IKJnt[1+x].attr('tx').get()
-        All_adl.input2.set()
+        All_adl.input2.set(jointTrans)
         st_mdl.o>>All_adl.input1
+        
+        JntConnectList=[]
+        JntConnectList.append(All_adl)
+        
+    UptretchOutputMDL=JntConnectList[0]
+    DntretchOutputMDL=JntConnectList[1]
     
-    
-    
-    
-    
-    
-    
+    UptretchOutputMDL.o>>IKJnt[1]
+    DntretchOutputMDL.o>>IKJnt[2]
         
 
-    
-    
-    for p,pc in enumerate(dict_['pc']):
-        pc.attr('parameter').set(divNumList[p])
-        dict_['chkpc'][p].attr('parameter').set(divNumList[p])
-        if pc in dict_['pc'][:-1]:
-            pc.position >> dict_['db'][p].point1
-            dict_['chkpc'][p].position >> dict_['chkdb'][p].point1
-            dict_['md'][p].attr('operation').set(2)
-            dict_['md1'][p].attr('operation').set(3)
-            dict_['md2'][p].attr('operation').set(2)
-            dict_['md2'][p].attr('i1x').set(1)
-            dict_['md2'][p].attr('i1y').set(1)
-            dict_['md2'][p].attr('i1z').set(1)
-            dict_['db'][p].distance >> dict_['ba'][p].input[1]
-            dict_['stml'].o >> dict_['ba'][p].attributesBlender
-            dict_['sqml'].o >> dict_['md1'][p].i2x
-            dict_['ba'][p].o >> dict_['md'][p].i1x
-            dict_['md'][p].ox >> dict_['ml'][p].i1
-            dict_['md'][p].ox >> dict_['md1'][p].i1x
-            dict_['md1'][p].ox >> dict_['md2'][p].i2y
-            dict_['md1'][p].ox >> dict_['md2'][p].i2z
-            dict_['chkdb'][p].distance >> dict_['ba'][p].input[0]
-            dict_['chkdb'][p].distance >> dict_['md'][p].i2x
-        if p>0:
-            pc.position >> dict_['db'][p-1].point2
-            dict_['chkpc'][p].position >> dict_['chkdb'][p-1].point2
-    
-    #dict_['md2'][0].oy >> joints_[0].sy
-    #dict_['md2'][0].oz >> joints_[0].sz
-    for i,db in enumerate(dict_['db']):
-        dist_ = db.getAttr('distance')
-        dict_['ml'][i].attr('i2').set(dist_)
-        dict_['ml'][i].o >> joints_[1:][i].tx
-        addAttr(joints_[1:][i],ln="SquashScaleY", at='double',  dv=0, k=1)
-        addAttr(joints_[1:][i],ln="SquashScaleZ", at='double',  dv=0, k=1)
-        dict_['md2'][i].oy >> joints_[1:][i].SquashScaleY
-        dict_['md2'][i].oz >> joints_[1:][i].SquashScaleZ
-    
-    dict_['stml'].attr('i1').set(10)
-    dict_['stml'].attr('i2').set(0.1)
-    dict_['sqml'].attr('i1').set(10)
-    dict_['sqml'].attr('i2').set(0.1)
 
-  
-def IKJntStretch(object_):
-    name_ = object_[0].split('Jnt')[0].replace('1','')
-    stJnt, enJnt, = object_[0], object_[-1]
-    joints_ = searchJoint(stJnt, enJnt)
-    names_ = [jnt.name().split('Jnt')[0].replace('1','') for jnt in joints_]
-    number = int(len(joints_))
-    divNumList = division(number-1)
-    crvs_ = [object_cv_curve(n, joints_) for n in [name_, '{0}Chk'.format(name_)]]
-    nodeDict_ = createNodes(name_, names_, crvs_, divNumList)
-    IKNodeConnection(nodeDict_, joints_, divNumList)
-    [parent(crv, nodeDict_['SysGrp']) for crv in crvs_]
-   
-    return (crvs_[0],joints_)
-    
-
-
-# 으아ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ
 
 # 첫번째와 마지막 조인트 잡고 실행해주세요
 sel = ls(sl=1,r=1,fl=1)
