@@ -124,20 +124,27 @@ def IKNodeConnection(dict_, joints_, divNumList):
         dict_['md2'][i].oy >> joints_[1:][i].SquashScaleY
         dict_['md2'][i].oz >> joints_[1:][i].SquashScaleZ
     
+
+    addAttr(joints_[0],ln="SquashScaleY", at='double',  dv=0, k=1)
+    addAttr(joints_[0],ln="SquashScaleZ", at='double',  dv=0, k=1)
+    dict_['md2'][0].oy >> joints_[0].SquashScaleY
+    dict_['md2'][0].oz >> joints_[0].SquashScaleZ
+
     dict_['stml'].attr('i1').set(10)
     dict_['stml'].attr('i2').set(0.1)
     dict_['sqml'].attr('i1').set(10)
     dict_['sqml'].attr('i2').set(0.1)
 
   
-def IKStretch(object_):
+def IKStretch(object_,Crv):
     name_ = object_[0].split('Jnt')[0].replace('1','')
     stJnt, enJnt, = object_[0], object_[-1]
     joints_ = searchJoint(stJnt, enJnt)
     names_ = [jnt.name().split('Jnt')[0].replace('1','') for jnt in joints_]
     number = int(len(joints_))
     divNumList = division(number-1)
-    crvs_ = [object_cv_curve(n, joints_) for n in [name_, '{0}Chk'.format(name_)]]
+    ChkCrv=PyNode(Crv.replace('Crv','ChkCrv'))
+    crvs_ = [Crv,ChkCrv]
     nodeDict_ = createNodes(name_, names_, crvs_, divNumList)
     IKNodeConnection(nodeDict_, joints_, divNumList)
     [parent(crv, nodeDict_['SysGrp']) for crv in crvs_]

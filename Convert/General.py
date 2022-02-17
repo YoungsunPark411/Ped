@@ -25,23 +25,23 @@ def spine_joint_make(curve_Name,spineName,joint_count,joint_start_n,type,ojVal='
     jointPosition=eqDistanceCurveDivide(curve_Name,joint_count)
 
     jointList=[]
-    mc.select(cl=1)
-    mc.select(cl=1)
+    pm.select(cl=1)
+    pm.select(cl=1)
     for x in jointPosition:
-        createName='%s%s%sJnt'%(spineName,str(joint_start_n).zfill(1),type)
-        jointList.append(createName)
-        mc.joint(p=x,n=createName)
+        createName='%s%s%sJnt'%(spineName,str(joint_start_n).zfill(1),type)        
+        Jnt_=pm.joint(p=x,n=createName)
+        apJnt_=pm.ls(Jnt_)[0]
+        jointList.append(apJnt_)
         joint_start_n+=1
     if jointList:
-        mc.select(jointList[0]);
-        mc.makeIdentity (apply=1,t =0,r= 1 ,s =0 ,n =0 ,pn= 1);
-        mc.joint(e=1  ,oj ='xzy' ,secondaryAxisOrient= 'zdown',ch =1 ,zso=1);
-        mc.setAttr ("%s.jointOrientX"%jointList[-1], 0);
-        mc.setAttr ("%s.jointOrientY"%jointList[-1], 0);
-        mc.setAttr ("%s.jointOrientZ"%jointList[-1], 0);
-        mc.select(jointList)
-
-
+        pm.select(jointList[0]);
+        pm.makeIdentity (apply=1,t =0,r= 1 ,s =0 ,n =0 ,pn= 1);
+        pm.joint(e=1  ,oj ='xzy' ,secondaryAxisOrient= 'zdown',ch =1 ,zso=1);
+        pm.setAttr ("%s.jointOrientX"%jointList[-1], 0);
+        pm.setAttr ("%s.jointOrientY"%jointList[-1], 0);
+        pm.setAttr ("%s.jointOrientZ"%jointList[-1], 0);
+        pm.select(jointList)
+ 
 
     return jointList
 
@@ -59,7 +59,7 @@ def NameExtraction(curve1):
         side = 'Dn'
     else:
         side = ''
-    obList=['Arm','UpArm','DnArm','Leg','UpLeg','DnLeg','Clavicle','Neck','Spine','Thumb','Index','Middle','Ring','Pinky','Eye','Tongue','BigToe','SecondToe','ThidToe']
+    obList=['Arm','UpArm','DnArm','Leg','UpLeg','DnLeg','Clavicle','Neck','Spine','Thumb','Index','Middle','Ring','Pinky','Eye','Tongue']
     for i in range(len(obList)):
         if obList[i] in cn:
             ob = obList[i]
@@ -87,7 +87,7 @@ def GrpMake():
 
 def JntMake(AllCurve,segNumber, Type):
     #pm.rebuildCurve(AllCurve, ch=1, rpo=1, rt=0, end=1, kr=0, kcp=0, kep=1, kt=0, s=segNumber, d=3, tol=0.01)
-    JntList=spine_joint_make(curve_Name=AllCurve, spineName='%s'%(AllCurve.split('_')[0].replace('Crv','')), joint_count=segNumber, joint_start_n=1,type= Type)
+    JntList=spine_joint_make(curve_Name=AllCurve, spineName='%s'%(AllCurve.split('_')[0]), joint_count=segNumber, joint_start_n=0,type= Type)
     return JntList
 
 def NameChange():
@@ -616,7 +616,7 @@ def rotate_components(rx, ry, rz, nodes=None):
         nodes = pm.ls(nodes)
 
     for node in nodes:
-        # print node
+
         pivot = pm.xform(node, q=True, rp=True, ws=True)
         pm.rotate(
             "{0}.cv[*]".format(node), rx, ry, rz, r=True, p=pivot, os=True, fo=True
@@ -629,7 +629,7 @@ def translate_components(tx, ty, tz, nodes=None):
     else:
         nodes = pm.ls(nodes)
     for node in nodes:
-        # print node
+
         pivot = pm.xform(node, q=True, rp=True, ws=True)
         pm.move("{0}.cv[*]".format(node), tx, ty, tz, relative=True, objectSpace=True, worldSpaceDistance=True)
 
@@ -714,104 +714,4 @@ def JntAxesChange(Axes,SAO,JntList):
     pm.setAttr ("%s.jointOrientX"%JntList[-1], 0)
     pm.setAttr ("%s.jointOrientY"%JntList[-1], 0)
     pm.setAttr ("%s.jointOrientZ"%JntList[-1], 0)
-
-# joint Seperate tool
-
-def sel_():
-    return pm.ls(sl=1, r=1)
-
-
-def getChildren_(object_, type_=None):
-    """Get the childrens from top object
-
-	Arguments:
-		object_ (node): transform node
-		type_ (type): node type
-
-	Returns:
-		list : childrens list
-
-	"""
-    object_ = pm.PyNode(object_)
-    if not type_:
-        type_ = 'transform'
-    child_ = object_.listRelatives(ad=1, c=1, typ=type_)
-    child_ = child_ + [object_]
-    child_.reverse()
-    return child_
-
-
-def get_trans(object_):
-    return object_.getMatrix(worldSpace=True)[-1][:-1]
-
-
-def length(v0, v1):
-    v = v1 - v0
-    return v.length()
-
-
-def space_(name_, parent_=None):
-    space_ = pm.createNode('transform',
-                           n='{}GRP'.format(name_),
-                           p=parent_)
-    return space_
-
-
-def joint_insert(joint_, name_, pos_):
-    if joint_.type() == 'joint':
-        JNT = joint_.insert()
-        pm.joint(JNT, n=name_, e=True, co=True, p=pos_)
-        return pm.PyNode(name_)
-
-
-def linear_spacing_joint(joint_, num, axis='x'):
-    joints = [joint_, joint_.getChildren()[0]]
-    stJoint = joints[0]
-    stOtherType = stJoint.getAttr('otherType')
-    stSide = stJoint.getAttr('side')
-    enJoint = joints[-1]
-    stTrans_ = get_trans(stJoint)
-    enTrans_ = get_trans(enJoint)
-    length_ = length(stTrans_, enTrans_)
-    divValue = length_ / (num + 1)
-
-    if axis:
-        if axis == 'x':
-            value = (divValue, 0, 0)
-        if axis == 'y':
-            value = (0, divValue, 0)
-        if axis == 'z':
-            value = (0, 0, divValue)
-        if axis == '-x':
-            value = (-1 * divValue, 0, 0)
-        if axis == '-y':
-            value = (0, -1 * divValue, 0)
-        if axis == '-z':
-            value = (0, 0, -1 * divValue)
-    else:
-        value = (divValue, 0, 0)
-
-    insertList = [stJoint]
-    for i in range(num):
-        localspace = space_(stJoint.name(), parent_=insertList[i])
-        localspace.setAttr('t', value)
-        name_ = '{0}{1}{2}{3}'.format(stJoint.name(), '_', i + 1, 'Jnt')
-        pos_ = get_trans(localspace)
-        JNT = joint_insert(insertList[i], name_, pos_)
-        JNT.attr('type').set(18)
-        JNT.attr('otherType').set('{0}{1}'.format(stOtherType, i + 1))
-        JNT.attr('side').set(stSide)
-        pm.delete(localspace)
-        insertList.append(JNT)
-
-
-def linearSpacingJoint(num_, axis):
-    for i in sel_():
-        linear_spacing_joint(i,
-                             num_,
-                             axis
-                             )
-
-
-#linearSpacingJoint(3, 'x')
 

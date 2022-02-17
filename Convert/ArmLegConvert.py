@@ -12,6 +12,7 @@ import IKFKBlend as kb
 import Seal_IKStretchSet as st
 # reload(gn)
 # reload(kb)
+# reload(st)
 
 Scale=gn.scaleGet()
 
@@ -19,16 +20,16 @@ Scale=gn.scaleGet()
 def DuplicateJnt(JntSel,type):
     orgJnt=JntSel
     rstJnt=[]
-    [ rstJnt.append( pm.createNode('joint',n='%s%sJnt'%(jnt.replace('Jnt',''),type) ) ) for jnt in orgJnt ]
-    list(map( lambda a,b: gn.PosCopy(a,b), orgJnt, rstJnt ))
+    [ rstJnt.append( pm.createNode('joint',n='%s%sJnt'%(jnt.replace('Jnt','').replace('Drv',''),type) ) ) for jnt in orgJnt ]
+    list(map( lambda a,b: pm.delete(pm.pointConstraint(a,b)), orgJnt, rstJnt ))
     for i in range(len(orgJnt)):
         if i==0: continue
         if '|' in rstJnt[i]:
             rstJnt[i]=rstJnt[i].replace('|','')
         pm.parent( rstJnt[i], rstJnt[i-1] )
-        pm.makeIdentity(rstJnt[i],a=1, t=1,r=1,s=1,n=0,pn=1)
+        #pm.makeIdentity(rstJnt[i],a=1, t=1,r=1,s=1,n=0,pn=1)
 
-    pm.joint(rstJnt[0],e=1  ,oj ='xyz' ,secondaryAxisOrient= 'zdown',ch =1 ,zso=1)
+    pm.joint(rstJnt[0],e=1  ,oj ='xyz' ,secondaryAxisOrient= 'zup',ch =1 ,zso=1)
     pm.makeIdentity(rstJnt[0],a=1, t=1,r=1,s=1,n=0,pn=1)
     pm.setAttr ("%s.jointOrientX"%rstJnt[-1], 0);
     pm.setAttr ("%s.jointOrientY"%rstJnt[-1], 0);
@@ -90,7 +91,7 @@ def IKCtrlMake(IKJnt):
         pm.setAttr(IKCtrl[0] + ".Follow", 1)
     elif 'Leg' in ob:
         pm.addAttr(ln="Follow", at='enum', en='Hip:Root:Fly:World', k=1)
-        FootFunction = ["FootRoll", "BallRoll", "BallRoll", "ToeRoll", "InOut", "HeelPivot", "BallPivot", "ToePivot"]
+        FootFunction = ["FootRoll", "BallRoll",  "ToeRoll", "InOut", "HeelPivot", "BallPivot", "ToePivot"]
         for x in FootFunction:
             pm.addAttr(ln=x, at='double', min=-10, max=10, dv=0, k=1)
         pm.setAttr("%s%sIKCtrl.Follow"%(side,ob), 2)
@@ -108,9 +109,10 @@ def IKCtrlMatch(IKJnt):
     IKCtrl,IKConstCtrl,IKSubCtrl = IKCtrlList[0],IKCtrlList[1],IKCtrlList[2]
     pm.parent(IKCtrl, IKConstCtrl)
     pm.parent(IKSubCtrl, IKCtrl)
-    gn.PosCopy(IKJnt[-1], IKConstCtrl)
-    RX = IKConstCtrl.rotateX.get()
-    IKConstCtrl.rotateX.set(RX -270)
+    pm.delete(pm.pointConstraint(IKJnt[-1], IKConstCtrl))
+    #gn.PosCopy(IKJnt[-1], IKConstCtrl)
+    #RX = IKConstCtrl.rotateX.get()
+    #IKConstCtrl.rotateX.set(RX -270)
     gn.addNPO(IKConstCtrl, 'Grp')
     gn.addNPO(IKCtrl, 'Grp')
     gn.addNPO(IKSubCtrl, 'Grp')
@@ -169,7 +171,7 @@ def FKCtrlMake(JntList,shape_,cns):
         pass
     elif cns == 1:
         for i in range(len(ctlList)):
-            gn.Mcon(ctlList[i],JntList[i],t=1, r=1, s=1, sh=1, mo=1, pvtCalc=1)
+            gn.Mcon(ctlList[i],JntList[i],t=1, r=1,  mo=0, pvtCalc=1)
     for y in ctlList:
         gn.addNPO(y,'Grp')
     MotherFKCtrlGrp=pm.listRelatives(ctlList[0],p=1)[0]
@@ -247,8 +249,7 @@ def ArcCtrlMake():
     UpArcCtrl = gn.ControlMaker('%s%sUpArcCtrl'%(side,ob) , 'hexagon', SubColor, exGrp=0, size=Scale)
     MidArcCtrl = gn.ControlMaker('%s%sMidArcCtrl'%(side,ob) , 'hexagon', SubColor, exGrp=0, size=Scale)
     DnArcCtrl = gn.ControlMaker('%s%sDnArcCtrl'%(side,ob) , 'hexagon', SubColor, exGrp=0, size=Scale)
-    #LongJnt=kb.getChildren_(JntSel[0], type_='joint')
-    #ArcJntMatchList=[LongJnt[2],LongJnt[4],LongJnt[6]]
+
     ArcCtrlList=[UpArcCtrl[0],MidArcCtrl[0],DnArcCtrl[0]]
     for i in ArcCtrlList:
         gn.rotate_components(0, 0, 90, nodes=i)
@@ -293,7 +294,7 @@ def ArcCtrlMatch(DrvJnt,UpIKCrv,DnIKCrv,ArcPointPos,bs):
             
         elif x==MidArcCtrl :
             pm.delete(pm.pointConstraint(DrvJnt[1],grp_[0],mo=0))
-            pm.parentConstraint(DrvJnt[0],grp_[0],mo=1)
+            pm.parentConstraint(DrvJnt[1],grp_[0],mo=1)
             PBgrp_=gn.addNPO(x,'PBGrp')
             pm.pointConstraint(ArcPointPos,PBgrp_)
             pm.orientConstraint(DrvJnt[0],PBgrp_)
@@ -403,14 +404,12 @@ def ArcCurveMake(DrvJnt):
         pm.delete(cls)
         pm.rebuildCurve(x, ch=1, rpo=1, rt=0, end=1, kr=0, kcp=0, kep=1, kt=0, s=2, d=3, tol=0.01)
 
-        
     for i in N_CrvList:
         Rbd=pm.rebuildCurve(i, ch=1, rpo=1, rt=0, end=1, kr=0, kcp=0, kep=1, kt=0, s=2, d=3, tol=0.01)
 
     IKCrvGrp=pm.group(UpIKCrv,DnIKCrv,n='%s%sIKCrvGrp'%(side,ob))
     ArcCrvGrp=pm.group(UpArcCrv,DnArcCrv,n='%s%sArcCrvGrp'%(side,ob))
-    
-        
+
     #커브 블랜드쉐입 
     bs=pm.blendShape(ArcCrvGrp,IKCrvGrp,n='%s%sArcBS'%(side,ob))[0]
     ArcMDL=pm.createNode('multDoubleLinear',n='%s%sArcMDL'%(side,ob))
@@ -427,7 +426,6 @@ def ArcCurveMake(DrvJnt):
     pm.parentConstraint(DrvJnt[0], UpIKChkCrv, mo=1)
     pm.parentConstraint(DrvJnt[1], DnIKChkCrv, mo=1)
 
-
     UpArcCrvSh=pm.listRelatives(UpArcCrv,s=1)[0]
     DnArcCrvSh=pm.listRelatives(DnArcCrv,s=1)[0]
  
@@ -437,14 +435,12 @@ def ArcCurveMake(DrvJnt):
     #ArcCtrl 만들고 위치 시키기 
     ArcCtrlList=ArcCtrlMatch(DrvJnt,UpIKCrv,DnIKCrv,App,bs)
    
-    for i in IKCrvList:
+    # for i in IKCrvList:
+    #     Rbd=pm.rebuildCurve(i, ch=1, rpo=1, rt=0, end=1, kr=0, kcp=0, kep=1, kt=0, s=2, d=3, tol=0.01)
+    
+    for i in N_CrvList:
         Rbd=pm.rebuildCurve(i, ch=1, rpo=1, rt=0, end=1, kr=0, kcp=0, kep=1, kt=0, s=2, d=3, tol=0.01)
 
-    #pm.rebuildCurve(N_CrvList[0], ch=1, rpo=1, rt=0, end=1, kr=2, kcp=0, kep=1, kt=0, s=2, d=3, tol=0.01)
-    #pm.rebuildCurve(N_CrvList[1], ch=1, rpo=1, rt=0, end=1, kr=2, kcp=0, kep=1, kt=0, s=2, d=3, tol=0.01)
-    
-    #organize
-    # pm.parent(App,IKCrvGrp,ArcCrvGrp,EtcGrp)
 
     return [PosList,UpIKCrv,DnIKCrv,UpArcCrv,DnArcCrv,ArcCtrlList]
 
@@ -462,6 +458,8 @@ def ArcSplineRig(PosNCrv_,UpArcJnt,DnArcJnt):
     Dnhandle = DnikHandle[0]
     Dnhandle.dTwistControlEnable.set(1)
     Dnhandle.dWorldUpType.set(4)
+    
+    return [Uphandle,Dnhandle,UpIKCrv,DnIKCrv]
 
     #pm.parent('%s%sUpIKCrv','%s%sDnIKCrv','%s%sIKCrvGrp')
 
@@ -526,6 +524,7 @@ def ArcJntMake(Crv,JntSel):
     # segNumber=len(Chain)
     segNumber=5
     arcJnt=gn.JntMake(Crv,segNumber, 'Arc')
+
     
     return arcJnt
     
@@ -536,13 +535,14 @@ def ArcRig(JntSel):
     UpIKCrv,DnIKCrv=posNCrv[1],posNCrv[2]
     UpArcJnt=ArcJntMake(UpIKCrv,JntSel)
     DnArcJnt=ArcJntMake(DnIKCrv,JntSel)
-    ArcSplineRig(posNCrv,UpArcJnt,DnArcJnt)
-    
+    results_=ArcSplineRig(posNCrv,UpArcJnt,DnArcJnt)
+    ArcHandles=results_[:2]
+    IKCrvs=results_[2:]
     pm.parent(DnArcJnt[0],UpArcJnt[-1])
     ArcJnt = kb.getChildren_(UpArcJnt[0], type_='joint')
     ArcCtrls=posNCrv[-1]
     ArcCtrlRig(ArcCtrls)
-    return [UpArcJnt,DnArcJnt]
+    return [UpArcJnt,DnArcJnt,ArcHandles,IKCrvs]
     
 # 스트레치 스쿼시 리깅 
 def connectStretchSquash(sel):
@@ -558,8 +558,8 @@ def connectStretchSquash(sel):
     IKFKCtrl.Stretch>>stMDL.input1
     IKFKCtrl.Squash >> sqMDL.input1
 
-def Spline(sel):
-    crv_Jnt=st.IKStretch(sel)
+def Spline(sel,Crv):
+    crv_Jnt=st.IKStretch(sel,Crv)
     # crv_=crv_Jnt[0]
     # Jnt_=crv_Jnt[1]
     connectStretchSquash(sel)
@@ -698,7 +698,7 @@ def IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl):
     PVUpLenDB=distancBetween_('%s%sPVUpLen'%(side,ob))
     PVDnLenDB=distancBetween_('%s%sPVDnLen'%(side,ob))
     PVUpLen=PosLen(pos1,PVPos,PVUpLenDB)
-    PVDnLen=PosLen(PVPos,pos3,PVDnLenDB)
+    PVDnLen=PosLen(PVPos,MovePos,PVDnLenDB)
     
     
     PVLens=[PVUpLen,PVDnLen]
@@ -749,94 +749,165 @@ def IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl):
     md_=MDConnect(IKCtrl,'Stretch')
     md_.o>>bc.blender
 
-# def TwistUpEnd():
-#     #TwistUpPos1 만들기
-#     TwistUpPos1=pm.createNode('transform',n='%s%s%sTwistUpPos'%subob[0])
-#     IKFKCtrl=pm.PyNode('%s%sIKFKCtrl')
-#     if side == 'Left':
-#         TwistUpPosMDL=pm.createNode('multDoubleLinear',n='%s%sTwistUpPosMDL')
-#         TwistUpPosMDL.input2.set(-1)
-#         IKFKCtrl.UpTwistFix>>TwistUpPosMDL.input1
-#     else:
-#         IKFKCtrl.UpTwistFix>>TwistUpPos1.rotateX
-#     TwistUpPos1Grp=gn.addNPO(TwistUpPos1, 'Grp')[0]
-#     TwistUpAimPos = pm.createNode('transform', n='%s%s%sTwistUpAimPos' % subob[0])
-#     TwistUpVecPos = pm.createNode('transform', n='%s%s%sTwistUpVecPos' % subob[0])
-#     gn.PosCopy(DrvJnt[1],TwistAimPos1,t=1,r=1,mo=0)
-#     gn.PosCopy(TwistUpPos1Grp, TwistAimPos1, t=1, r=1,mo=0)
-#     TwistUpFixGrp = pm.createNode('transform', n='%s%s%sTwistUpFixGrp' % subob[0])
-#     pm.parent(TwistUpVecPos,TwistUpAimPos,sTwistUpPos1FixGrp)
+#트위스트 셋팅하기 
 
-#     # TwistUpPos1 연결
-#     pm.pointConstraint(DrvJnt[0],TwistUpAimPos,mo=1)
-#     TwistVP=pm.createNode('vectorProduct',n='%s%sTwistVP')
-#     TwistUpAimPos.translate>>TwistVP.input1
-#     pm.setDrivenKeyframe(TwistUpVecPos + '.rotateZ', cd=TwistVP + '.outputX', dv=-1, v=-90)
-#     pm.setDrivenKeyframe(TwistUpVecPos + '.rotateZ', cd=TwistVP + '.outputX', dv=0, v=0)
-#     pm.setDrivenKeyframe(TwistUpVecPos + '.rotateZ', cd=TwistVP + '.outputX', dv=1, v=90)
-#     pm.aimConstraint(TwistUpAimPos,TwistUpPos1Grp,wut=2,worldUpObject= TwistUpVecPos)
-#     pm.parent(TwistUpFixGrp,RigSysGrp)
+def PVnTwist(JntSel,IKCtrls):
+    JntSel_=[JntSel[0],JntSel[-1]]
+    PVTgJnt=DuplicateJnt(JntSel_,'PV')
+    PVIKHandle = pm.ikHandle(sj=PVTgJnt[0], ee=PVTgJnt[-1], n='%s%sPVIKHandle'%(side,ob), sol='ikSCsolver', ccv=0)
+    PVIKHandle_=PVIKHandle[0]
+    IKSubCtrl=IKCtrls[0][2]
+    pm.parentConstraint(IKSubCtrl,PVIKHandle_,mo=0)
+    pm.setAttr ("%s.jointOrientX"%PVTgJnt[-1], 0)
+    pm.setAttr ("%s.jointOrientY"%PVTgJnt[-1], 0)
+    pm.setAttr ("%s.jointOrientZ"%PVTgJnt[-1], 0)
+    
+    TwistTg = pm.createNode('transform', n='%s%sTwistTg'%(side,ob))
+    gn.PosCopy(PVTgJnt[-1],TwistTg)
+    pm.parent(TwistTg,PVTgJnt[-1])
+    
+    PVCtrl=IKCtrls[1]
+    PVCtrlGrp=PVCtrl.getParent()
+    pm.parentConstraint(TwistTg,PVCtrlGrp,mo=1)
+    
+    IKCtrl=IKCtrls[0][0]
+    IKCtrl.Twist>>TwistTg.rx
+    
+def ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl):
+    #상박
+    DrvJntUpList=[DrvJnt[0],DrvJnt[1]]
+    TwistUpJnt=DuplicateJnt(DrvJntUpList,'UpTwist')
+    TwistIKHandle = pm.ikHandle(sj=TwistUpJnt[0], ee=TwistUpJnt[-1], n='%s%sUpTwistIKHandle'%(side,ob), sol='ikSCsolver', ccv=0)
+    TwistIKHandle_=TwistIKHandle[0]
+    gn.Mcon(DrvJnt[0],TwistUpJnt[0],t=1,  sh=1, mo=1, pvtCalc=1)
+    gn.Mcon(DrvJnt[1],TwistIKHandle_,t=1,  sh=1, mo=1, pvtCalc=1)    
+    pm.setAttr ("%s.jointOrientX"%TwistUpJnt[-1], 0)
+    pm.setAttr ("%s.jointOrientY"%TwistUpJnt[-1], 0)
+    pm.setAttr ("%s.jointOrientZ"%TwistUpJnt[-1], 0)
+    
 
-#     # TwistUpPos2 만들기
-#     if side == 'Left':
-#         TwistUpPos1=pm.createNode('transform',n='%s%s%sTwistUpPos'%subob[0])
-#     else:
-#         IKFKCtrl.UpTwistFix>>TwistUpPos1.rotateX
+    #하박
+    DrvJntDnList=[DrvJnt[1],DrvJnt[2]]
+    TwistDnJnt=DuplicateJnt(DrvJntDnList,'DnTwist')
+    TwistDnIKHandle = pm.ikHandle(sj=TwistDnJnt[0], ee=TwistDnJnt[-1], n='%s%sDnTwistIKHandle'%(side,ob), sol='ikSCsolver', ccv=0)
+    TwistDnIKHandle_=TwistDnIKHandle[0]
+    gn.Mcon(DrvJnt[1],TwistDnJnt[0],t=1,  sh=1, mo=1, pvtCalc=1)
+    gn.Mcon(DrvJnt[2],TwistDnIKHandle_,t=1,  sh=1, mo=1, pvtCalc=1)    
+    pm.setAttr ("%s.jointOrientX"%TwistDnJnt[-1], 0)
+    pm.setAttr ("%s.jointOrientY"%TwistDnJnt[-1], 0)
+    pm.setAttr ("%s.jointOrientZ"%TwistDnJnt[-1], 0)
+    
 
+    #상박 트위스트 연결 
+    pos1=transform_(TwistUpJnt[0].replace('Jnt',''))
+    gn.PosCopy(DrvJnt[0],pos1)
+    pos1Grp=gn.addNPO(pos1,'Grp')
+    gn.Mcon(TwistUpJnt[0],pos1Grp[0],t=1,r=1,  mo=1, pvtCalc=1)
+    md=multDoubleLinear_(pos1)
+    md.input2.set(-1)
+    IKFKCtrl.UpTwistFix>>md.input1
+    md.o>>pos1.rx
+    
+    #중박 트위스트 연결 
+    pos2=transform_(TwistDnJnt[0].replace('Jnt','').replace('Dn','Mid'))
+    gn.PosCopy(DrvJnt[1],pos2)
+    pos2Grp=gn.addNPO(pos2,'Grp')
+    gn.Mcon(DrvJnt[1],pos2Grp[0],t=1,r=1 , mo=0, pvtCalc=1)
+    IKFKCtrl.DnTwistFix>>pos2.rx
+    
+    pos2Tg=transform_(TwistDnJnt[0].replace('Jnt','').replace('Dn','MidTg'))
+    gn.PosCopy(DrvJnt[1],pos2Tg)
+    pm.parent(pos2Tg,pos2Grp)
+    pm.orientConstraint(DrvJnt[1],TwistUpJnt[1],pos2Tg,mo=0)
+    
+    pos2OffGrp=gn.addNPO(pos2,'OffGrp')
+    pm.orientConstraint(pos2Tg,pos2OffGrp,mo=0,weight=0.5)
+    
 
+    #하박 트위스트 연결
+    pos3=transform_(TwistDnJnt[-1].replace('Jnt',''))
+    gn.PosCopy(DrvJnt[-1],pos3)
+    pos3Grp=gn.addNPO(pos3,'Grp')
+    gn.Mcon(DrvJnt[-1],pos3Grp[0],t=1,  mo=0, pvtCalc=1)
+    pm.orientConstraint(DrvJnt[1],pos3Grp[0],mo=0,weight=0.5)
+    pm.orientConstraint(DrvJnt[2],pos3Grp[0],mo=0)
+    
+    pm.group(pos1Grp[0],pos2Grp[0],pos3Grp[0],n='%s%sTwistPosGrp'%(side,ob))
+    
+    #아크 트위스트 연결 
+    ArcUpHandle=ArcHandles[0]
+    ArcDnHandle=ArcHandles[1]
+    
+    pos1.worldMatrix[0]>>ArcUpHandle.dWorldUpMatrix
+    pos2.worldMatrix[0]>>ArcUpHandle.dWorldUpMatrixEnd
+    
+    pos2.worldMatrix[0]>>ArcDnHandle.dWorldUpMatrix
+    pos3.worldMatrix[0]>>ArcDnHandle.dWorldUpMatrixEnd
+    
 
+def BindJntConnect(ArcJnt,JntSel_):
 
-# def Organize():
-#     RootCtrl=RootCtrlMake()
-#     CtrlList=['%s%sIKConstCtrl','side_subob1_FKCtrl','%s%sUpArcCtrl','%s%sMidArcCtrl','%s%sDnArcCtrl','%s%sIKFKCtrl','%s%sPoleVectorCtrl']
-#     for x in CtrlList:
-#         if pm.objExists(x):
-#             grp=pm.PyNode(x+'Grp')
-#             pm.parent(grp,RootCtrl)
-#         else:
-#             pass
-#     SysList=[DrvJnt[0].replace('DrvJnt','ArcPos'),DrvJnt[1].replace('DrvJnt','ArcPos'),DrvJnt[2].replace('DrvJnt','ArcPos'),'%s%sUpArcHandle','%s%sDnArcHandle','%s%sUpArcCurve','%s%sDnArcCurve']
-#     for x in SysList:
-#         if pm.objExists(x):
-#             sys=pm.PyNode(x)
-#             pm.parent(sys,EtcGrp)
-#         else:
-#             pass
-
-#     gn.Mcon(RootCtrl,IKJnt[0],t=1, r=1, sh=1, mo=1, pvtCalc=1)
-#     pm.parent(AllCrv,UpCurve,DnCurve,EtcGrp)
+    BiJnt=gn.jntList(JntSel_,len(ArcJnt))
+    for x in range(len(ArcJnt)):
+        gn.Mcon(ArcJnt[x],BiJnt[x],t=1,r=1,  mo=0, pvtCalc=1)
+            
+def BindJntScaleConnect(FKCtrls,UpArcJnt,DnArcJnt,JntSel,IKFKCtrl):
+    FKCtrl=FKCtrls[0]
+    ArcJntList=[UpArcJnt,DnArcJnt]
+    JntSel_List=JntSel[:2]
 
     
-# def NameChange():
-#     SideSel=pm.ls('*side_*')
-#     ObSel=pm.ls('*ob_*')
-#     subob1Sel=pm.ls('*subob1_*')
-#     subob2Sel=pm.ls('*subob2_*')
-#     subob3Sel=pm.ls('*subob3_*')
-#     for x in SideSel:
-#         pm.rename(x,x.replace('side_',side))          
-#     for y in ObSel:
-#         pm.rename(y,y.replace('ob_',ob))
-#     for i,j,k in zip(subob1Sel,subob2Sel,subob3Sel):
-#         pm.rename(i,i.replace('subob1_',subob[0]))
-#         pm.rename(j,j.replace('subob2_',subob[1]))
-#         pm.rename(k,k.replace('subob3_',subob[2]))
-#     # 블랜드쉐입 타겟 네이밍 수정
-#     BS = pm.ls('%s%sArcBS' % (side, ob), type='blendShape')[0]
-#     pm.aliasAttr('%s%sArcCrvGrp' % (side, ob), BS.w[0])
-#     # 컨스트레인 노드 어트리뷰트 네이밍 수정
-#     CNSList = ['pointConstraint', 'parentConstraint', 'orientConstraint','aimConstraint']
-#     for x in CNSList:
-#         cns = pm.ls(type=x)
-#         for i in cns:
-#             find = i.attr('target[0].targetWeight')
-#             Str_find = str(find)
-#             F_attr = find.listConnections(d=0, s=1, p=1)[0]
-#             Str_attr = str(F_attr).split('.')[-1]
-#             if 'ob_' in Str_attr:
-#                 pm.renameAttr(F_attr, Str_attr.replace('side_', side).replace('ob_', ob))
-#             else:
-#                 pass
+    for i,j,k in zip(FKCtrl,ArcJntList,JntSel_List):  
+        PartJntSel=gn.jntList(k,len(j))
+        for x in range(len(j)-1):
+                F_bc=blendColors_(PartJntSel[x].replace('Jnt','Scale'))
+                IKFKCtrl.IKFK>>F_bc.blender
+                i.sy>>F_bc.color1G
+                i.sz>>F_bc.color1B
+                j[x].SquashScaleY>>F_bc.color2G
+                j[x].SquashScaleZ>>F_bc.color2B
+                F_bc.outputG>>PartJntSel[x].sy
+                F_bc.outputB>>PartJntSel[x].sz
+                
+    #손목 스케일 연결
+    E_bc=blendColors_(JntSel[-1].replace('Jnt','Scale'))
+    IKFKCtrl.IKFK>>E_bc.blender
+    FKCtrl[-1].sy>>E_bc.color1G
+    FKCtrl[-1].sz>>E_bc.color1B
+    DnArcJnt[-1].SquashScaleY>>E_bc.color2G
+    DnArcJnt[-1].SquashScaleZ>>E_bc.color2B
+    E_bc.outputG>>JntSel[-1].sy
+    E_bc.outputB>>JntSel[-1].sz
+         
+        
+    
+
+        
+
+
+
+    
+# 클래비클 or 힙 컨트롤 만들고 배치
+def MakeClaOrHipCtrl(JntSel):
+    Scale = gn.scaleGet()
+    if ob=='Arm':
+        obj='Clavicle'
+    elif ob=='Leg':
+        obj='Hip'
+    Ctrl = gn.ControlMaker('%s%sCtrl'%(side,obj), 'circle', MainColor, exGrp=0, size=Scale)
+    
+    Surch_=JntSel[0].getParent()
+    ResultJnt=pm.ls(Surch_,type='joint')[0]
+    if not ResultJnt==None:
+        gn.PosCopy(ResultJnt,Ctrl[0])
+        gn.Mcon(Ctrl[0],ResultJnt,t=1,r=1,s=1,sh=1,  mo=0, pvtCalc=1)
+    else:
+        grp_=transform_('%s%sGrp'%(side,obj))
+        gn.PosCopy(JntSel[0],Ctrl[0])
+        gn.Mcon(Ctrl[0],grp_,t=1,r=1,s=1,sh=1,  mo=0, pvtCalc=1)
+    return Ctrl[0]
+
+
 def ArmLegRig(JntSel):
     IKJnt=DuplicateJnt(JntSel,'IK')
     IKCtrls=IKRig(IKJnt)
@@ -848,39 +919,46 @@ def ArmLegRig(JntSel):
     DrvJnt=DuplicateJnt(JntSel,'Drv')
     sel=[FKJnt[0],IKJnt[0],DrvJnt[0],IKFKCtrl]
     kb.IKFKBlend(sel)
-    #IKFKVisSet()
-    ArcJnts=ArcRig(DrvJnt)
 
+    ArcJnts=ArcRig(DrvJnt)
+    
+    ####아크조인트 스쿼시 채널 어디서 만들어졌는지 찾는 중 
     UpArcJnt,DnArcJnt=ArcJnts[0],ArcJnts[1]
     f_UpArcJnt=pm.PyNode(UpArcJnt[0])
     e_UpArcJnt=pm.PyNode(UpArcJnt[-1])
     UpArcJntSel=[f_UpArcJnt,e_UpArcJnt]
 
-    UpStSq=Spline(UpArcJntSel)
+    UpIKCrv,DnIKCrv=ArcJnts[3][0],ArcJnts[3][1]
+    UpStSq=Spline(UpArcJntSel,UpIKCrv)
     
     
     f_DnArcJnt=pm.PyNode(DnArcJnt[0])
     e_DnArcJnt=pm.PyNode(DnArcJnt[-1])
     DnArcJntSel=[f_DnArcJnt,e_DnArcJnt]
-    DnStSq=Spline(DnArcJntSel)
+    DnStSq=Spline(DnArcJntSel,DnIKCrv)
     
     IKCtrl=IKCtrls[0][0]
     PoleVectorCtrl=IKCtrls[1]
     IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl)
+    
+    PVnTwist(JntSel,IKCtrls)
+    ArcHandles=ArcJnts[2]
+    ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl)
+
+    #아크조인트와 바인드조인트 연결 
+    BindJntConnect(UpArcJnt,JntSel[0])
+    BindJntConnect(DnArcJnt,JntSel[1])
+    
+    BindJntScaleConnect(FKCtrls,UpArcJnt,DnArcJnt,JntSel,IKFKCtrl)
+    #클래비클 컨트롤 만들기 
+    MakeClaOrHipCtrl(JntSel)
+    
+    
 
     
     
     
-    
-    # ArcRig()
-    # BindRig()
-    # StretchPractice()
-    # Organize()
-    # NameChange()
-   
 
-    ###### 스쿼시 만들기, 트위스트 넣기 , 다리 안된다.... , 조인트 오리엔트 방향 맞추기!
-    
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 JntSel=pm.ls(sl=1)
 side=sideName(JntSel)
