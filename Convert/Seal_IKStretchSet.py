@@ -102,7 +102,7 @@ def IKNodeConnection(dict_, joints_, divNumList):
             # dict_['db'][p].distance >> dict_['ba'][p].input[1]
             
             dict_['db'][p].distance >> dict_['md'][p].i1x
-            print('sffdsfgsg')
+            #print('sffdsfgsg')
             dict_['stml'].o >> dict_['ba'][p].attributesBlender
             dict_['sqml'].o >> dict_['md1'][p].i2x
             #dict_['ba'][p].o >> dict_['md'][p].i1x
