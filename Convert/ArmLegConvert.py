@@ -27,14 +27,30 @@ def DuplicateJnt(JntSel,type):
         if '|' in rstJnt[i]:
             rstJnt[i]=rstJnt[i].replace('|','')
         pm.parent( rstJnt[i], rstJnt[i-1] )
-        #pm.makeIdentity(rstJnt[i],a=1, t=1,r=1,s=1,n=0,pn=1)
-
-    pm.joint(rstJnt[0],e=1  ,oj ='xyz' ,secondaryAxisOrient= 'zup',ch =1 ,zso=1)
-    pm.makeIdentity(rstJnt[0],a=1, t=1,r=1,s=1,n=0,pn=1)
-    pm.setAttr ("%s.jointOrientX"%rstJnt[-1], 0);
-    pm.setAttr ("%s.jointOrientY"%rstJnt[-1], 0);
-    pm.setAttr ("%s.jointOrientZ"%rstJnt[-1], 0);
+        pm.makeIdentity(rstJnt[i],a=1, t=1,r=1,s=1,n=0,pn=1)
+    
+    
+    
+    # pm.makeIdentity(rstJnt[0],a=1, t=1,r=1,s=1,n=0,pn=1)
+    # pm.setAttr ("%s.jointOrientX"%rstJnt[-1], 0)
+    # pm.setAttr ("%s.jointOrientY"%rstJnt[-1], 0)
+    # pm.setAttr ("%s.jointOrientZ"%rstJnt[-1], 0)
+    if side=='Right':
+        pm.joint(rstJnt[0],e=1  ,oj ='xyz' ,secondaryAxisOrient= 'zdown',ch =1 ,zso=1)
+        pm.makeIdentity(rstJnt[0],a=1, t=1,r=1,s=1,n=0,pn=1)
+        pm.setAttr ("%s.jointOrientX"%rstJnt[-1], 0)
+        pm.setAttr ("%s.jointOrientY"%rstJnt[-1], 0)
+        pm.setAttr ("%s.jointOrientZ"%rstJnt[-1], 0)
+        pass
+    else:
+        pm.joint(rstJnt[0],e=1  ,oj ='xyz' ,secondaryAxisOrient= 'zup',ch =1 ,zso=1)
+        pm.makeIdentity(rstJnt[0],a=1, t=1,r=1,s=1,n=0,pn=1)
+        pm.setAttr ("%s.jointOrientX"%rstJnt[-1], 0)
+        pm.setAttr ("%s.jointOrientY"%rstJnt[-1], 0)
+        pm.setAttr ("%s.jointOrientZ"%rstJnt[-1], 0)
     return rstJnt
+    
+
 
 def sideName(JntSel):
     if 'Left' in str(JntSel[0]):
@@ -99,6 +115,7 @@ def IKCtrlMake(IKJnt):
     pm.setAttr(IKCtrl[0] + '.ConstCtrlVis', keyable=0, channelBox=1)
     IKConstCtrl = gn.ControlMaker('%s%sIKConstCtrl'%(side,ob), 'hexagon', MainColor, exGrp=0, size=Scale * 1.2)
     IKSubCtrl = gn.ControlMaker('%s%sIKSubCtrl'%(side,ob), 'circle', SubColor, exGrp=0, size=Scale * 0.8)
+    
     gn.rotate_components(0, 0, 90, nodes=IKCtrl[0])
     gn.rotate_components(0, 0, 90, nodes=IKConstCtrl[0])
     gn.rotate_components(0, 0, 90, nodes=IKSubCtrl[0])
@@ -110,12 +127,28 @@ def IKCtrlMatch(IKJnt):
     pm.parent(IKCtrl, IKConstCtrl)
     pm.parent(IKSubCtrl, IKCtrl)
     pm.delete(pm.pointConstraint(IKJnt[-1], IKConstCtrl))
-    #gn.PosCopy(IKJnt[-1], IKConstCtrl)
-    #RX = IKConstCtrl.rotateX.get()
-    #IKConstCtrl.rotateX.set(RX -270)
-    gn.addNPO(IKConstCtrl, 'Grp')
-    gn.addNPO(IKCtrl, 'Grp')
-    gn.addNPO(IKSubCtrl, 'Grp')
+    
+    if ob == 'Leg':
+        gn.addNPO(IKConstCtrl, 'Grp')
+        gn.addNPO(IKCtrl, 'Grp')
+        gn.addNPO(IKSubCtrl, 'Grp')
+    
+    else:
+        
+        gn.PosCopy(IKJnt[-1], IKConstCtrl)
+        RX = IKConstCtrl.rotateX.get()
+        RZ = IKConstCtrl.rotateZ.get()
+        RY = IKConstCtrl.rotateY.get()
+        if side=='Right':
+            print('ok')
+            IKConstCtrl.rotateX.set(RX- 90)
+            IKConstCtrl.rotateY.set(RY -180)
+
+        elif side=='Left':
+            IKConstCtrl.rotateX.set(RX -90)
+        gn.addNPO(IKConstCtrl, 'Grp')
+        gn.addNPO(IKCtrl, 'Grp')
+        gn.addNPO(IKSubCtrl, 'Grp')
     
     return [IKCtrl,IKConstCtrl,IKSubCtrl]
 
@@ -142,7 +175,6 @@ def IKRig(IKJnt):
     IKCtrlList=IKCtrlMatch(IKJnt)
     IKCtrl,IKConstCtrl,IKSubCtrl = IKCtrlList[0],IKCtrlList[1],IKCtrlList[2]
     IKHandle = pm.ikHandle(sj=IKJnt[0], ee=IKJnt[-1], n='%s%sIKHandle'%(side,ob), sol='ikRPsolver', ccv=0)
-    #pm.parent(IKHandle[0], RigSysGrp)
     IKPos = pm.createNode('transform', n='%s%sIKPos'%(side,ob))
     gn.PosCopy(IKCtrl,IKPos)
     pm.parent(IKPos, IKCtrl)
@@ -278,6 +310,9 @@ def CurveToPC(src,tg):
             
 def ArcCtrlMatch(DrvJnt,UpIKCrv,DnIKCrv,ArcPointPos,bs):
     ArcCtrlList=ArcCtrlMake()
+
+    
+    
     UpArcCtrl,MidArcCtrl,DnArcCtrl=ArcCtrlList[0],ArcCtrlList[1],ArcCtrlList[2]
     for x in ArcCtrlList:
         grp_=gn.addNPO(x,'Grp')
@@ -309,6 +344,11 @@ def ArcCtrlMatch(DrvJnt,UpIKCrv,DnIKCrv,ArcPointPos,bs):
             pc=CurveToPC(src,tg)
             bs.outputGeometry[1]>>pc.inputCurve
             bs.outputGeometry[1]>>tc2.target[0].targetGeometry
+            
+    IKFKCtrl=pm.PyNode('%s%sIKFKCtrl'%(side,ob))
+    for x in ArcCtrlList:
+        Grp_=x.getParent()
+        IKFKCtrl.ArcCtrlVis>>Grp_.visibility
     return ArcCtrlList
     
 
@@ -324,6 +364,9 @@ def ArcCurveMake(DrvJnt):
         
     #Pos->ArcPointPos
     App = pm.createNode('transform', n='%s%sArcPointPos'%(side,ob))
+
+    
+    
     AUpDB = pm.createNode('distanceBetween', n='%s%sArcUpDB'%(side,ob))
     PosList[0].t>>AUpDB.point1
     PosList[1].t >> AUpDB.point2
@@ -440,7 +483,8 @@ def ArcCurveMake(DrvJnt):
     
     for i in N_CrvList:
         Rbd=pm.rebuildCurve(i, ch=1, rpo=1, rt=0, end=1, kr=0, kcp=0, kep=1, kt=0, s=2, d=3, tol=0.01)
-
+    
+    PosList.append(App)
 
     return [PosList,UpIKCrv,DnIKCrv,UpArcCrv,DnArcCrv,ArcCtrlList]
 
@@ -532,6 +576,8 @@ def ArcJntMake(Crv,JntSel):
 def ArcRig(JntSel):
     
     posNCrv=ArcCurveMake(JntSel)
+    
+    
     UpIKCrv,DnIKCrv=posNCrv[1],posNCrv[2]
     UpArcJnt=ArcJntMake(UpIKCrv,JntSel)
     DnArcJnt=ArcJntMake(DnIKCrv,JntSel)
@@ -542,7 +588,9 @@ def ArcRig(JntSel):
     ArcJnt = kb.getChildren_(UpArcJnt[0], type_='joint')
     ArcCtrls=posNCrv[-1]
     ArcCtrlRig(ArcCtrls)
-    return [UpArcJnt,DnArcJnt,ArcHandles,IKCrvs]
+    
+    ArcPosList=posNCrv[0]
+    return [UpArcJnt,DnArcJnt,ArcHandles,IKCrvs,ArcPosList]
     
 # 스트레치 스쿼시 리깅 
 def connectStretchSquash(sel):
@@ -563,6 +611,7 @@ def Spline(sel,Crv):
     # crv_=crv_Jnt[0]
     # Jnt_=crv_Jnt[1]
     connectStretchSquash(sel)
+    return crv_Jnt[0]
 
 
 
@@ -641,7 +690,7 @@ def IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl):
     pos1,pos2,pos3=posList[0],posList[1],posList[2]
     MovePos=pm.duplicate(pos3,n=pos3.replace('Pos','MovePos'))[0]
     pm.parentConstraint(IKCtrl,MovePos)
-    pm.group(posList,MovePos,n='%s%sPosGrp'%(side,ob))
+    posGrp_=pm.group(posList,MovePos,n='%s%sPosGrp'%(side,ob))
     UpLenDB=distancBetween_('%s%sUpLen'%(side,ob))
     DnLenDB=distancBetween_('%s%sDnLen'%(side,ob))
     AllLenDB=distancBetween_('%s%sAllLen'%(side,ob))
@@ -700,6 +749,8 @@ def IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl):
     PVUpLen=PosLen(pos1,PVPos,PVUpLenDB)
     PVDnLen=PosLen(PVPos,MovePos,PVDnLenDB)
     
+    pm.parent(PVPos,posGrp_)
+    
     
     PVLens=[PVUpLen,PVDnLen]
     Lens=[UpLen,DnLen]
@@ -748,16 +799,50 @@ def IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl):
     
     md_=MDConnect(IKCtrl,'Stretch')
     md_.o>>bc.blender
+    
+    return posGrp_
 
 #트위스트 셋팅하기 
 
 def PVnTwist(JntSel,IKCtrls):
     JntSel_=[JntSel[0],JntSel[-1]]
-    PVTgJnt=DuplicateJnt(JntSel_,'PV')
+    
+    PVTgJnt_pos=DuplicateJnt(JntSel_,'PV')
+    # jnt1=pm.createNode('joint')
+    # gn.PosCopy(PVTgJnt_pos[0],jnt1)
+    # jnt2=pm.createNode('joint')
+    # gn.PosCopy(PVTgJnt_pos[1],jnt2)
+    # pm.parent(jnt2,jnt1)
+    
+    # pm.delete(PVTgJnt_pos)
+    
+    # nm1=pm.rename(jnt1,PVTgJnt_pos[0])
+    # nm2=pm.rename(jnt2,PVTgJnt_pos[1])
+    
+    # PVTgJnt=[nm1,nm2]
+    jointPosition=[]
+    for x in PVTgJnt_pos:
+        tt=pm.xform(x, q=1, ws=1, rp=1 )
+        jointPosition.append(tt)
+    pm.delete(PVTgJnt_pos)
+    PVTgJnt=[]
+    pm.select(cl=1)
+    pm.select(cl=1)
+    for x,y in zip(jointPosition,PVTgJnt_pos):
+        createName=y  
+        Jnt_=pm.joint(p=x,n=createName)
+        apJnt_=pm.ls(Jnt_)[0]
+        PVTgJnt.append(apJnt_)
+
+    
+    
+
+    pm.joint(PVTgJnt[0],e=1  ,oj ='xyz' ,secondaryAxisOrient= 'zdown',ch =1 ,zso=1)
+    #gn.PosCopy(JntSel[2],PVTgJnt[-1])
     PVIKHandle = pm.ikHandle(sj=PVTgJnt[0], ee=PVTgJnt[-1], n='%s%sPVIKHandle'%(side,ob), sol='ikSCsolver', ccv=0)
     PVIKHandle_=PVIKHandle[0]
     IKSubCtrl=IKCtrls[0][2]
-    pm.parentConstraint(IKSubCtrl,PVIKHandle_,mo=0)
+    pm.pointConstraint(IKSubCtrl,PVIKHandle_,mo=0)
     pm.setAttr ("%s.jointOrientX"%PVTgJnt[-1], 0)
     pm.setAttr ("%s.jointOrientY"%PVTgJnt[-1], 0)
     pm.setAttr ("%s.jointOrientZ"%PVTgJnt[-1], 0)
@@ -771,12 +856,23 @@ def PVnTwist(JntSel,IKCtrls):
     pm.parentConstraint(TwistTg,PVCtrlGrp,mo=1)
     
     IKCtrl=IKCtrls[0][0]
-    IKCtrl.Twist>>TwistTg.rx
+    
+    if side=='Right':
+        md_=multDoubleLinear_(side+ob+'Twist')
+        md_.input2.set(-1)
+        IKCtrl.Twist>>md_.input1
+        md_.o>>TwistTg.rx
+    else:
+        IKCtrl.Twist>>TwistTg.rx
+    
+    return [PVTgJnt[0],PVIKHandle_]
     
 def ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl):
     #상박
     DrvJntUpList=[DrvJnt[0],DrvJnt[1]]
     TwistUpJnt=DuplicateJnt(DrvJntUpList,'UpTwist')
+    if side == 'Right':
+        pm.joint(TwistUpJnt[0],e=1  ,oj ='xyz' ,secondaryAxisOrient= 'zdown',ch =1 ,zso=1)
     TwistIKHandle = pm.ikHandle(sj=TwistUpJnt[0], ee=TwistUpJnt[-1], n='%s%sUpTwistIKHandle'%(side,ob), sol='ikSCsolver', ccv=0)
     TwistIKHandle_=TwistIKHandle[0]
     gn.Mcon(DrvJnt[0],TwistUpJnt[0],t=1,  sh=1, mo=1, pvtCalc=1)
@@ -789,6 +885,8 @@ def ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl):
     #하박
     DrvJntDnList=[DrvJnt[1],DrvJnt[2]]
     TwistDnJnt=DuplicateJnt(DrvJntDnList,'DnTwist')
+    if side == 'Right':
+        pm.joint(TwistDnJnt[0],e=1  ,oj ='xyz' ,secondaryAxisOrient= 'zdown',ch =1 ,zso=1)
     TwistDnIKHandle = pm.ikHandle(sj=TwistDnJnt[0], ee=TwistDnJnt[-1], n='%s%sDnTwistIKHandle'%(side,ob), sol='ikSCsolver', ccv=0)
     TwistDnIKHandle_=TwistDnIKHandle[0]
     gn.Mcon(DrvJnt[1],TwistDnJnt[0],t=1,  sh=1, mo=1, pvtCalc=1)
@@ -823,6 +921,37 @@ def ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl):
     pos2OffGrp=gn.addNPO(pos2,'OffGrp')
     pm.orientConstraint(pos2Tg,pos2OffGrp,mo=0,weight=0.5)
     
+    # #중박 트위스트 연결 2
+    # name_=TwistDnJnt[0].replace('Jnt','').replace('Dn','Mid')
+    # pos2=transform_(name_)
+    # AimGrp_=gn.addNPO(pos2,'AimGrp')
+    # AimGrp=AimGrp_[0]
+    # TgPos=transform_(name_+'FixTg')
+    # AssiA=transform_(name_+'AssiA')
+    # AssiB=transform_(name_+'AssiB')
+    # AllGrp=pm.createNode('transform',n=name_+'FixGrp')
+    
+    # pm.parent(TgPos,AssiA,AssiB,AimGrp,AllGrp)
+    # pm.parent(AllGrp,DrvJnt[0])
+    # gn.PosCopy(DrvJnt[0],AllGrp)
+    
+    # gn.PosCopy(DrvJnt[1],AssiA)
+    # pm.parent(AssiA,DrvJnt[1])
+    # TgPos.tx.set(1)
+    # AssiA.tx.set(1)
+    # AssiB.tx.set(1)
+    
+    
+    
+    # pm.pointConstraint(DrvJnt[1],AllGrp,mo=0)
+    # pm.pointConstraint(AssiA,AssiB,TgPos,mo=1)
+    # pm.aimConstraint(TgPos,AimGrp,mo=1,wut=2,wuo=AssiA,aimVector=( 1, 0, 0), upVector=( 0, 1, 0), worldUpVector=( 0, 1, 0))
+    
+    # IKFKCtrl.DnTwistFix>>pos2.rx
+    
+    
+    
+    
 
     #하박 트위스트 연결
     pos3=transform_(TwistDnJnt[-1].replace('Jnt',''))
@@ -832,7 +961,8 @@ def ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl):
     pm.orientConstraint(DrvJnt[1],pos3Grp[0],mo=0,weight=0.5)
     pm.orientConstraint(DrvJnt[2],pos3Grp[0],mo=0)
     
-    pm.group(pos1Grp[0],pos2Grp[0],pos3Grp[0],n='%s%sTwistPosGrp'%(side,ob))
+    #posGrp_=pm.group(pos1Grp[0],pos2Grp[0],pos3Grp[0],n='%s%sTwistPosGrp'%(side,ob))
+    posGrp_=pm.group(pos1Grp[0],pos2Grp[0],pos3Grp[0],n='%s%sTwistPosGrp'%(side,ob))
     
     #아크 트위스트 연결 
     ArcUpHandle=ArcHandles[0]
@@ -843,6 +973,8 @@ def ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl):
     
     pos2.worldMatrix[0]>>ArcDnHandle.dWorldUpMatrix
     pos3.worldMatrix[0]>>ArcDnHandle.dWorldUpMatrixEnd
+    
+    return [TwistUpJnt,TwistIKHandle_,TwistDnJnt,TwistDnIKHandle_,posGrp_]
     
 
 def BindJntConnect(ArcJnt,JntSel_):
@@ -897,10 +1029,11 @@ def MakeClaOrHipCtrl(JntSel):
     Ctrl = gn.ControlMaker('%s%sCtrl'%(side,obj), 'circle', MainColor, exGrp=0, size=Scale)
     
     Surch_=JntSel[0].getParent()
-    ResultJnt=pm.ls(Surch_,type='joint')[0]
-    if not ResultJnt==None:
-        gn.PosCopy(ResultJnt,Ctrl[0])
-        gn.Mcon(Ctrl[0],ResultJnt,t=1,r=1,s=1,sh=1,  mo=0, pvtCalc=1)
+
+    ResultJnt=pm.ls(Surch_)[0]
+    if not type(ResultJnt)=='joint':
+        gn.PosCopy(JntSel[0],Ctrl[0])
+        #gn.Mcon(Ctrl[0],ResultJnt,t=1,r=1,s=1,sh=1,  mo=0, pvtCalc=1)
     else:
         grp_=transform_('%s%sGrp'%(side,obj))
         gn.PosCopy(JntSel[0],Ctrl[0])
@@ -914,14 +1047,15 @@ def ArmLegRig(JntSel):
     FKJnt=DuplicateJnt(JntSel,'FK')
     FKCtrls=FKRig(FKJnt)
     IKFKCtrl=IKFKCtrlMake(JntSel)
-    
-    IKFKVisConnect(IKCtrls[1].getParent(),FKCtrls[0][0].getParent(),IKFKCtrl)
+
+    IKFKVisConnect(IKCtrls[0][1].getParent(),FKCtrls[0][0].getParent(),IKFKCtrl)
     DrvJnt=DuplicateJnt(JntSel,'Drv')
     sel=[FKJnt[0],IKJnt[0],DrvJnt[0],IKFKCtrl]
     kb.IKFKBlend(sel)
 
     ArcJnts=ArcRig(DrvJnt)
-    
+    ArcPosList=ArcJnts[4]
+
     ####아크조인트 스쿼시 채널 어디서 만들어졌는지 찾는 중 
     UpArcJnt,DnArcJnt=ArcJnts[0],ArcJnts[1]
     f_UpArcJnt=pm.PyNode(UpArcJnt[0])
@@ -937,21 +1071,67 @@ def ArmLegRig(JntSel):
     DnArcJntSel=[f_DnArcJnt,e_DnArcJnt]
     DnStSq=Spline(DnArcJntSel,DnIKCrv)
     
+    
+    
     IKCtrl=IKCtrls[0][0]
     PoleVectorCtrl=IKCtrls[1]
-    IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl)
+    IKPosGrp=IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl)
     
-    PVnTwist(JntSel,IKCtrls)
+    PVnTwistResult=PVnTwist(JntSel,IKCtrls)
     ArcHandles=ArcJnts[2]
-    ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl)
-
+    ArcTwistResult=ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl)
+    
     #아크조인트와 바인드조인트 연결 
     BindJntConnect(UpArcJnt,JntSel[0])
     BindJntConnect(DnArcJnt,JntSel[1])
     
     BindJntScaleConnect(FKCtrls,UpArcJnt,DnArcJnt,JntSel,IKFKCtrl)
     #클래비클 컨트롤 만들기 
-    MakeClaOrHipCtrl(JntSel)
+    ClavicleCtrl=MakeClaOrHipCtrl(JntSel)
+    
+    #정리하기 
+    JntGrp=pm.createNode('transform',n='%s%sJntGrp'%(side,ob))
+    pm.parent(IKJnt[0],FKJnt[0],DrvJnt[0],f_UpArcJnt,JntGrp)
+    JntGrp.visibility.set(0)
+ 
+    SysGrp=pm.createNode('transform',n='%s%sSysGrp'%(side,ob))
+
+ 
+    F_TwistJnt=ArcTwistResult[0][0]
+    F_TwistHandle=ArcTwistResult[1]
+    E_TwistJnt=ArcTwistResult[2][0]
+    E_TwistHandle=ArcTwistResult[3]
+    TwistPosGrp=ArcTwistResult[4]
+
+    ArcTwistResult_=[F_TwistJnt,F_TwistHandle,E_TwistJnt,E_TwistHandle,TwistPosGrp]
+    ArcCrvs=[DnStSq.getParent(),UpStSq.getParent()]
+    pm.parent(PVnTwistResult,ArcTwistResult_,ArcHandles,IKPosGrp,ArcPosList,ArcCrvs,SysGrp)
+    SysGrp.visibility.set(0)
+    
+    
+    IKCtrl.PVctrlVis>>PoleVectorCtrl.getParent().visibility
+
+    ConstCtrl=IKCtrls[0][1]
+    IKSub=IKCtrls[0][2]
+    IKSub.getParent().visibility.set(0)
+    IKCtrl.ConstCtrlVis>>ConstCtrl.getShape().visibility
+    
+    ArcCrvGrp=pm.PyNode('%s%sArcCrvGrp'%(side,ob))
+    pm.parent(ArcCrvGrp,SysGrp)
+    pm.delete('%s%sIKCrvGrp'%(side,ob))
+    
+    IKHandle=pm.PyNode('%s%sIKHandle'%(side,ob))
+    pm.parent(IKHandle,SysGrp)
+    
+    CtrlGrp=pm.createNode('transform',n='%s%sCtrlGrp'%(side,ob))
+    
+    arcUpCtrl=pm.PyNode('%s%sUpArcCtrlGrp'%(side,ob))
+    arcMidCtrl=pm.PyNode('%s%sMidArcCtrlGrp'%(side,ob))
+    arcDnCtrl=pm.PyNode('%s%sDnArcCtrlGrp'%(side,ob))
+    
+    pm.parent(PoleVectorCtrl.getParent(),ConstCtrl.getParent(),ClavicleCtrl,arcUpCtrl,arcMidCtrl,arcDnCtrl,FKCtrls[0][0].getParent(),IKFKCtrl.getParent(),CtrlGrp)
+    
+    
     
     
 

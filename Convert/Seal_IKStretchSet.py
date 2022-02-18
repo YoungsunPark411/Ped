@@ -99,10 +99,14 @@ def IKNodeConnection(dict_, joints_, divNumList):
             dict_['md2'][p].attr('i1x').set(1)
             dict_['md2'][p].attr('i1y').set(1)
             dict_['md2'][p].attr('i1z').set(1)
-            dict_['db'][p].distance >> dict_['ba'][p].input[1]
+            # dict_['db'][p].distance >> dict_['ba'][p].input[1]
+            
+            dict_['db'][p].distance >> dict_['md'][p].i1x
+            print('sffdsfgsg')
             dict_['stml'].o >> dict_['ba'][p].attributesBlender
             dict_['sqml'].o >> dict_['md1'][p].i2x
-            dict_['ba'][p].o >> dict_['md'][p].i1x
+            #dict_['ba'][p].o >> dict_['md'][p].i1x
+            ###delete(dict_['ba'][p])
             dict_['md'][p].ox >> dict_['ml'][p].i1
             dict_['md'][p].ox >> dict_['md1'][p].i1x
             dict_['md1'][p].ox >> dict_['md2'][p].i2y
@@ -112,9 +116,7 @@ def IKNodeConnection(dict_, joints_, divNumList):
         if p>0:
             pc.position >> dict_['db'][p-1].point2
             dict_['chkpc'][p].position >> dict_['chkdb'][p-1].point2
-    
-    #dict_['md2'][0].oy >> joints_[0].sy
-    #dict_['md2'][0].oz >> joints_[0].sz
+
     for i,db in enumerate(dict_['db']):
         dist_ = db.getAttr('distance')
         dict_['ml'][i].attr('i2').set(dist_)
@@ -145,9 +147,11 @@ def IKStretch(object_,Crv):
     divNumList = division(number-1)
     ChkCrv=PyNode(Crv.replace('Crv','ChkCrv'))
     crvs_ = [Crv,ChkCrv]
+    #nodeDict_ = createNodes(name_, names_, crvs_, divNumList)
     nodeDict_ = createNodes(name_, names_, crvs_, divNumList)
     IKNodeConnection(nodeDict_, joints_, divNumList)
-    [parent(crv, nodeDict_['SysGrp']) for crv in crvs_]
+    Grp_=[parent(crv, nodeDict_['SysGrp']) for crv in crvs_]
+    #print(Grp_)
    
     return (crvs_[0],joints_)
 
