@@ -98,5 +98,5 @@ def linearSpacingJoint(num_,axis):
     return segJnt
 
 
-yy=linearSpacingJoint(3,'x')
+yy=linearSpacingJoint(2,'x')
 

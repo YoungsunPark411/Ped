@@ -14,14 +14,15 @@ import Seal_IKStretchSet as st
 # reload(kb)
 # reload(st)
 
-Scale=gn.scaleGet()
-
+#Scale=gn.scaleGet()
+Scale=3
 # 조인트만들기
 def DuplicateJnt(JntSel,type):
     orgJnt=JntSel
     rstJnt=[]
     [ rstJnt.append( pm.createNode('joint',n='%s%sJnt'%(jnt.replace('Jnt','').replace('Drv',''),type) ) ) for jnt in orgJnt ]
-    list(map( lambda a,b: pm.delete(pm.pointConstraint(a,b)), orgJnt, rstJnt ))
+
+    list(map( lambda a,b: pm.delete(pm.parentConstraint(a,b)), orgJnt, rstJnt ))
     for i in range(len(orgJnt)):
         if i==0: continue
         if '|' in rstJnt[i]:
@@ -30,20 +31,7 @@ def DuplicateJnt(JntSel,type):
         pm.makeIdentity(rstJnt[i],a=1, t=1,r=1,s=1,n=0,pn=1)
     
     
-    
-    # pm.makeIdentity(rstJnt[0],a=1, t=1,r=1,s=1,n=0,pn=1)
-    # pm.setAttr ("%s.jointOrientX"%rstJnt[-1], 0)
-    # pm.setAttr ("%s.jointOrientY"%rstJnt[-1], 0)
-    # pm.setAttr ("%s.jointOrientZ"%rstJnt[-1], 0)
-    if side=='Right':
-        pm.joint(rstJnt[0],e=1  ,oj ='xyz' ,secondaryAxisOrient= 'zdown',ch =1 ,zso=1)
-        pm.makeIdentity(rstJnt[0],a=1, t=1,r=1,s=1,n=0,pn=1)
-        pm.setAttr ("%s.jointOrientX"%rstJnt[-1], 0)
-        pm.setAttr ("%s.jointOrientY"%rstJnt[-1], 0)
-        pm.setAttr ("%s.jointOrientZ"%rstJnt[-1], 0)
-        pass
-    else:
-        pm.joint(rstJnt[0],e=1  ,oj ='xyz' ,secondaryAxisOrient= 'zup',ch =1 ,zso=1)
+
         pm.makeIdentity(rstJnt[0],a=1, t=1,r=1,s=1,n=0,pn=1)
         pm.setAttr ("%s.jointOrientX"%rstJnt[-1], 0)
         pm.setAttr ("%s.jointOrientY"%rstJnt[-1], 0)
@@ -866,7 +854,7 @@ def PVnTwist(JntSel,IKCtrls):
         IKCtrl.Twist>>TwistTg.rx
     
     return [PVTgJnt[0],PVIKHandle_]
-    
+'''    
 def ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl):
     #상박
     DrvJntUpList=[DrvJnt[0],DrvJnt[1]]
@@ -976,6 +964,177 @@ def ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl):
     
     return [TwistUpJnt,TwistIKHandle_,TwistDnJnt,TwistDnIKHandle_,posGrp_]
     
+'''
+
+
+ 
+def VPsetDriven(sel1,sel2):
+
+   driver = sel1 + '.outputX'
+   driven = sel2 + '.rotateZ'
+
+   pm.setDrivenKeyframe(driven, cd=driver, dv=-1, v=-90)
+   pm.setDrivenKeyframe(driven, cd=driver, dv=0.0, v=0.0)
+   pm.setDrivenKeyframe(driven, cd=driver, dv=1, v=90)
+
+def TwistPosTop(DrvJnt,UpArcJnt):
+
+   fixGrp=pm.shadingNode('transform', au=1, n=DrvJnt[0].replace('DrvJnt','TwistFixGrp'))
+   aimGrp=pm.shadingNode('transform', au=1, n=DrvJnt[0].replace('DrvJnt','TwistAimGrp'))
+   tgPos=pm.shadingNode('transform', au=1, n=DrvJnt[0].replace('DrvJnt','TwistFixTgPos'))
+   upVec=pm.shadingNode('transform', au=1, n=DrvJnt[0].replace('DrvJnt','TwistFixUpvec'))
+   pos=pm.shadingNode('transform', au=1, n=DrvJnt[0].replace('DrvJnt','TwistFixPos'))
+   pm.parent(tgPos,upVec,aimGrp,fixGrp)
+   pm.parent(pos,aimGrp)
+
+   pm.parent(fixGrp,UpArcJnt[0].getParent())
+
+   gn.PosCopy(UpArcJnt[0],fixGrp)
+   gn.PosCopy(UpArcJnt[-1], tgPos)
+   gn.PosCopy(UpArcJnt[0], upVec)
+   pm.pointConstraint(DrvJnt[1],tgPos,mo=0)
+
+   vp=pm.shadingNode('vectorProduct', au=1, n=DrvJnt[0].replace('DrvJnt','TwistVP'))
+   tgPos.t>>vp.input1
+   vp.operation.set(1)
+   vp.input2Y.set(1)
+   vp.normalizeOutput.set(1)
+
+   VPsetDriven(vp, upVec)
+   pm.aimConstraint(tgPos, aimGrp, mo=0, wut=2, wuo=upVec, aimVector=(1, 0, 0), upVector=(0, 1, 0),
+                    worldUpVector=(0, 1, 0))
+   gn.Mcon(DrvJnt[0], fixGrp, t=1, mo=1, pvtCalc=1)
+
+   return pos
+
+
+def TwistPosTMid(DrvJnt, UpArcJnt,DnArcJnt):
+   fixGrp = pm.shadingNode('transform', au=1, n=DrvJnt[1].replace('DrvJnt', 'TwistFixGrp'))
+   aimGrp = pm.shadingNode('transform', au=1, n=DrvJnt[1].replace('DrvJnt', 'TwistAimGrp'))
+   tgPos = pm.shadingNode('transform', au=1, n=DrvJnt[1].replace('DrvJnt', 'TwistFixTgPos'))
+   
+   pos = pm.shadingNode('transform', au=1, n=DrvJnt[1].replace('DrvJnt', 'TwistFixPos'))
+   posUp = pm.shadingNode('transform', au=1, n=DrvJnt[1].replace('DrvJnt', 'TwistFixPosUp'))
+   posDn = pm.shadingNode('transform', au=1, n=DrvJnt[1].replace('DrvJnt', 'TwistFixPosDn'))
+   AssiA=pm.shadingNode('transform', au=1, n=DrvJnt[1].replace('DrvJnt', 'AssiAPos'))
+   AssiB = pm.shadingNode('transform', au=1, n=DrvJnt[1].replace('DrvJnt', 'AssiBPos'))
+   pm.parent(AssiB,tgPos, aimGrp, fixGrp)
+   pm.parent(posUp,posDn,pos)
+   pm.parent(pos, aimGrp)
+   pm.parent(AssiA, DrvJnt[1])
+   pm.parent(fixGrp, DrvJnt[0])
+   pm.delete(pm.parentConstraint(UpArcJnt[-1],DnArcJnt[0], fixGrp,mo=0))
+   tgPos.tx.set(1)
+
+   gn.PosCopy(tgPos, AssiA)
+   gn.PosCopy(tgPos, AssiB)
+
+   pm.pointConstraint(AssiA,AssiB, tgPos, mo=1)
+
+   pm.aimConstraint(tgPos, aimGrp, mo=0, wut=2, wuo=AssiA, aimVector=(1, 0, 0), upVector=(0, 1, 0),
+                    worldUpVector=(0, 1, 0))
+
+   gn.PosCopy(UpArcJnt[-1], posUp)
+   gn.PosCopy(DnArcJnt[0], posDn)
+
+   gn.addNPO(posUp, 'Grp')
+   gn.addNPO(posDn, 'Grp')
+
+   return [posUp,posDn]
+
+
+def TwistPosTDn(DrvJnt, DnArcJnt):
+   fixGrp = pm.shadingNode('transform', au=1, n=DrvJnt[-1].replace('DrvJnt', 'TwistFixGrp'))
+   aimGrp = pm.shadingNode('transform', au=1, n=DrvJnt[-1].replace('DrvJnt', 'TwistAimGrp'))
+   tgPos = pm.shadingNode('transform', au=1, n=DrvJnt[-1].replace('DrvJnt', 'TwistFixTgPos'))
+   upVec = pm.shadingNode('transform', au=1, n=DrvJnt[-1].replace('DrvJnt', 'TwistFixUpvec'))
+   pos = pm.shadingNode('transform', au=1, n=DrvJnt[-1].replace('DrvJnt', 'TwistFixPos'))
+   posSub=pm.shadingNode('transform', au=1, n=DrvJnt[-1].replace('DrvJnt', 'TwistFixSubPos'))
+   AssiA=pm.shadingNode('transform', au=1, n=DrvJnt[-1].replace('DrvJnt', 'AssiAPos'))
+   AssiB = pm.shadingNode('transform', au=1, n=DrvJnt[-1].replace('DrvJnt', 'AssiBPos'))
+   pm.parent(AssiB,tgPos, upVec, aimGrp, fixGrp)
+   pm.parent(pos,posSub, aimGrp)
+   pm.parent(AssiA, DrvJnt[2])
+   pm.parent(fixGrp, DrvJnt[1])
+
+   pm.delete(pm.parentConstraint(DnArcJnt[-1], fixGrp,mo=0))
+   tgPos.tx.set(1)
+
+   gn.PosCopy(tgPos, AssiA)
+   gn.PosCopy(tgPos, AssiB)
+
+   pm.pointConstraint(AssiA,AssiB, tgPos, mo=1)
+
+   pm.aimConstraint(tgPos, posSub, mo=0, wut=2, wuo=AssiA, aimVector=(1, 0, 0), upVector=(0, 1, 0),
+                    worldUpVector=(0, 1, 0))
+
+   Grp_=gn.addNPO(pos, 'Grp')
+   posGrp=Grp_[0]
+   pm.orientConstraint(posSub,posGrp,weight=1,mo=1)
+   pm.orientConstraint(aimGrp, posGrp, weight=0.5, mo=1)
+
+   return pos
+
+#IKCtrlPos=pm.PyNode('RightArmIKPos')
+def PVTwistAim(DrvJnt,IKCtrlPos):
+   name=side+ob
+   fixGrp = pm.shadingNode('transform', au=1, n=side+ob+ 'PVFixGrp')
+   aimGrp = pm.shadingNode('transform', au=1, n=side+ob+  'PVAimGrp')
+   tgPos = pm.shadingNode('transform', au=1,n=side+ob+  'PVFixTgPos')
+   tgPosSub = pm.shadingNode('transform', au=1,n=side+ob+  'PVFixTgPosSub')
+   upVec = pm.shadingNode('transform', au=1, n=side+ob+ 'PVFixUpvec')
+   pos = pm.shadingNode('transform', au=1, n=side+ob+  'PVFixPos')
+  
+   pm.parent(tgPos, upVec, aimGrp, fixGrp)
+   pm.parent(pos, aimGrp)
+
+   pm.parent(tgPosSub,tgPos)
+
+
+   gn.PosCopy(DrvJnt[0], fixGrp)
+   gn.PosCopy(DrvJnt[-1], tgPos)
+   tgPos.ty.set(0)
+   gn.PosCopy(DrvJnt[-1], tgPosSub)
+   
+   gn.PosCopy(DrvJnt[-1], upVec)
+   pm.pointConstraint(IKCtrlPos, tgPos, mo=1)
+
+   vp = pm.shadingNode('vectorProduct', au=1, n=DrvJnt[0].replace('DrvJnt', 'PVVP'))
+   tgPos.t >> vp.input1
+   vp.operation.set(1)
+   vp.input2Y.set(1)
+   vp.normalizeOutput.set(1)
+
+   VPsetDriven(vp, upVec)
+   pm.aimConstraint(tgPosSub, aimGrp, mo=0, wut=2, wuo=upVec, aimVector=(1, 0, 0), upVector=(0, 1, 0),
+                    worldUpVector=(0, 1, 0))
+   pm.delete(pm.pointConstraint(DrvJnt[1],pos,mo=0))
+   pm.delete(pm.orientConstraint(aimGrp,pos,mo=0))
+   # rxResult=pos.rx.get()
+   # pos.rx.set(rxResult+90)
+   # ryResult=pos.ry.get()
+   # pos.ry.set(rxResult+180)
+   posGrp_=gn.addNPO(pos, 'Grp')
+
+
+   return [fixGrp,pos]
+ 
+ 
+ 
+def ArcnTwistConnect(ArcHandles,UpPos,DnPos,MidposUp,MidPosDn):
+    ArcUpHandle=ArcHandles[0]
+    ArcDnHandle=ArcHandles[1]
+    
+    UpPos.worldMatrix[0]>>ArcUpHandle.dWorldUpMatrix
+    MidposUp.worldMatrix[0]>>ArcUpHandle.dWorldUpMatrixEnd
+    
+    MidPosDn.worldMatrix[0]>>ArcDnHandle.dWorldUpMatrix
+    DnPos.worldMatrix[0]>>ArcDnHandle.dWorldUpMatrixEnd
+    
+ 
+ 
+ 
+    
 
 def BindJntConnect(ArcJnt,JntSel_):
 
@@ -1056,7 +1215,7 @@ def ArmLegRig(JntSel):
     ArcJnts=ArcRig(DrvJnt)
     ArcPosList=ArcJnts[4]
 
-    ####아크조인트 스쿼시 채널 어디서 만들어졌는지 찾는 중 
+    ###아크조인트 스쿼시 채널 어디서 만들어졌는지 찾는 중 
     UpArcJnt,DnArcJnt=ArcJnts[0],ArcJnts[1]
     f_UpArcJnt=pm.PyNode(UpArcJnt[0])
     e_UpArcJnt=pm.PyNode(UpArcJnt[-1])
@@ -1077,9 +1236,20 @@ def ArmLegRig(JntSel):
     PoleVectorCtrl=IKCtrls[1]
     IKPosGrp=IKNodeConnection( IKJnt, IKCtrl,PoleVectorCtrl)
     
-    PVnTwistResult=PVnTwist(JntSel,IKCtrls)
+    #PVnTwistResult=PVnTwist(JntSel,IKCtrls)
     ArcHandles=ArcJnts[2]
-    ArcTwistResult=ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl)
+    #ArcTwistResult=ArcnTwist(DrvJnt,IKCtrls,ArcHandles,IKFKCtrl)
+    #트위스트 잡는 것들
+    UpPos=TwistPosTop(DrvJnt,UpArcJnt)
+    MidPosz=TwistPosTMid(DrvJnt, UpArcJnt,DnArcJnt)
+    DnPos=TwistPosTDn(DrvJnt, DnArcJnt)
+    MidposUp,MidPosDn=MidPosz[0],MidPosz[1]
+    PVPosz=PVTwistAim(DrvJnt,IKCtrlPos)
+    PVFixGrp=PVPosz[0]
+    PVPos=PVPosz[1]
+    
+    #트위스트 잡는 것과 트위스트 스플라인 핸드 연결하기 
+    ArcnTwistConnect(ArcHandles,UpPos,DnPos,MidposUp,MidPosDn)
     
     #아크조인트와 바인드조인트 연결 
     BindJntConnect(UpArcJnt,JntSel[0])
@@ -1147,4 +1317,6 @@ colors=Color(side)
 MainColor,SubColor,fingerMainColor=colors[0],colors[1],colors[2]
 
 LeftArmRig=ArmLegRig(JntSel)
+
+#바인드 조인트의 첫번째, 중간, 마지막 조인트를 누르고 실행!
 
