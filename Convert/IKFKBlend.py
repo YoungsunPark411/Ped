@@ -36,7 +36,9 @@ def IKFKBlend(object_):
         #print(name_, FKChain[i], IKChain[i])
         PB_ = createNode('pairBlend', n='{0}PB'.format(name_))
         BC_ = shadingNode('blendColors', au=1, n='{0}BC'.format(name_))
+        print('ok')
         FKChain[i].r >> PB_.ir2
+        print('ok2')
         FKChain[i].t >> PB_.it2
         FKChain[i].s >> BC_.color1
         IKChain[i].r >> PB_.ir1
@@ -46,22 +48,25 @@ def IKFKBlend(object_):
 
         PB_.outTranslate >> drv.t
         PB_.outRotate >> drv.r
+        print('ok3')
         #BC_.output >> OrigChain[i].s
 
         switch.IKFK>>BC_.blender
+        print('ok4')
         switch.IKFK >> PB_.weight
+        print('ok5')
 
     return [PB_,BC_]
 
 
 
 
-'''
+
 # 첫번째 FK 최상위 조인트, IK 최상위 조인트, Drv 최상위 조인트, IKFK 스위치 선택후 실행해주세요
 sel = ls(sl=1,r=1,fl=1)
 IKFKBlend(sel)
 sel = ls(sl=1)[0]
 Chain = getChildren_(sel, type_='joint')
 
-'''
+
 

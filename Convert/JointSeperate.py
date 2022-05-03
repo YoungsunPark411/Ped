@@ -1,5 +1,5 @@
 import pymel.core as pm
-
+import os
 
 def sel_():
     return pm.ls(sl=1, r=1)
@@ -98,5 +98,7 @@ def linearSpacingJoint(num_,axis):
     return segJnt
 
 
-yy=linearSpacingJoint(2,'x')
+yy=linearSpacingJoint(3,'x')
+
+
 

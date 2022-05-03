@@ -5,6 +5,7 @@ note:
 date: 21.09.07
 '''
 import pymel.core as pm, pymel.core.datatypes as dt, maya.cmds as mc
+print('okokok')
 #General-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def eqDistanceCurveDivide(curvename,segmentcurveLength):
@@ -156,6 +157,7 @@ def ChangeCurveTransform(crv, type, transVec, pvt=0):
  
 # Control Maker
 def ChangeCurveColor(crv, colorNum=0):
+    print(crv)
     crvSh = crv.listRelatives(s=1)[0]
     crvSh.overrideEnabled.set(1)
     crvSh.overrideColor.set(colorNum)
@@ -478,8 +480,26 @@ def ControlMaker(name, form, colorNum, exGrp=False, size=1.0):
                                              ([-1.7295770319013387e-07, -0.9967649889721295, 6.386496017566562]),
                                              ([-1.7295770444949888e-07, -0.9479804586433058, 6.57775071817148])],
                           k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+        
+
+    elif form == 'hip':
+        rst[0] = pm.circle(n=name, c=[0, 0, 0], nr=[0, 0, 1], sw=360, r=1, d=3, ut=0, tol=0.01, s=8, ch=0)[0]
+        cvLs = [([-28.8406559249, -9.72801748188, -29.628359103]), 
+                ([-2.4974740664e-15, -12.9924082232, -41.5745499348]), 
+                ([28.8406559249, -9.72801748188, -29.628359103]), 
+                ([40.7868467567, -2.93423838039, -0.787703178136]), 
+                ([28.8406559249, -9.72801748188, 28.0529527467]), 
+                ([4.08564633502e-15, -12.9924082232, 39.9991435786]), 
+                ([-28.8406559249, -9.72801748188, 28.0529527467]), 
+                ([-40.7868467567, -2.93423838039, -0.787703178136]), 
+                ([-28.8406559249, -9.72801748188, -29.628359103]), 
+                ([-2.4974740664e-15, -12.9924082232, -41.5745499348]), 
+                ([28.8406559249, -9.72801748188, -29.628359103])]
+        list(map(lambda i: rst[0].cp[i].set(cvLs[i][0], cvLs[i][1], cvLs[i][2]), range(8)))
+        
 
 
+    print(rst[0])
     
     ChangeCurveColor(rst[0],colorNum)
     sz=size
@@ -491,7 +511,8 @@ def ControlMaker(name, form, colorNum, exGrp=False, size=1.0):
         else: rst[1]=pm.createNode( 'transform', n=exNm )
         pm.parent(rst[0],rst[1])
     return rst
-
+# tt=ControlMaker('test', 'hip', 21, exGrp=False, size=1.0)
+# ChangeCurveColor(tt[0], colorNum=7)
 
 # Pair Blend
 def PairBlend(Target, **op):
