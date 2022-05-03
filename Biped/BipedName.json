@@ -1,0 +1,131 @@
+{   
+    "sideName":[
+        "Middle",
+        "Left",
+        "Right",
+        "None",
+        "Front",
+        "Back"
+    ],
+    "extensionsName":[
+        "Ctrl",
+        "Jnt"
+    ],
+    "Axis":[
+        "xzy",
+        "zdown"
+    ],
+    "LegAxis":[
+        "xzy",
+        "zdown"
+    ],
+    "mirrorSide":{
+        "Left":"Right",
+        "Right":"Left"
+    },
+    "objName":[
+        "Arm",
+        "UpArm",
+        "DnArm",
+        "Leg",
+        "UpLeg",
+        "DnLeg",
+        "Clavicle",
+        "Neck",
+        "Spine",
+        "Thumb",
+        "Index",
+        "Middle",
+        "Ring",
+        "Pinky",
+        "Eye",
+        "Tongue",
+        "Jaw",
+        "Foot",
+        "Head"
+    ],
+    
+    "subObj":{
+        "Arm":[
+            "Shoulder", "Elbow", "Wrist"
+        ],
+        "Leg":[
+            "Thigh", "Knee", "Ankle"
+        ]
+    },
+    
+    "color":{
+        "Left":[
+            "13", "31", "20"
+        ],
+        "Right":[
+            "6", "29", "18"
+        ],
+        "other":[
+            "13", "31", "20"
+        ]
+    },
+    
+
+    "parts":{
+        
+        "Clavicle":[
+            "Clavicle", "ClavicleSub", "ClavicleTip"
+        ],
+        "Arm":[
+            "Shoulder", "Elbow", "Wrist"
+        ],
+        "UpArm":[
+            "Shoulder", "UpArmSeg1", "UpArmSeg2", "UpArmSeg3", "UpArmSeg4"
+        ],
+        "DnArm":[
+            "Elbow", "DnArmSeg1", "DnArmSeg2", "DnArmSeg3", "DnArmSeg4"
+        ],
+        "Leg":[
+            "Thigh","Knee", "Ankle"
+        ],
+        "UpLeg":[
+            "Thigh", "UpLegSeg1", "UpLegSeg2", "UpLegSeg3", "UpLegSeg4"
+        ],
+        "DnLeg":[
+            "Knee", "DnLegSeg1", "DnLegSeg", "DnLegSeg3", "DnLegSeg4"
+        ],
+        "Spine":[
+            "Root", "Spine1", "Spine2", "Spine3", "Chest"
+        ],
+        "Neck":[
+            "Neck1", "Neck2", "Neck3", "Head"
+        ],
+        "Jaw":[
+            "Jaw", "JawTip"
+        ],
+        "Tongue":[
+            "Tongue1", "Tongue2", "Tongue3", "Tongue4", "Tongue5", "Tongue6"
+        ],
+
+        "Index":[
+            "IndexRoot", "Index1", "Index2", "Index3", "IndexTip"
+        ],
+        "Middle":[
+            "MiddleRoot", "Middle1", "Middle2", "Middle3", "MiddleTip"
+        ],
+        "Ring":[
+            "RingRoot", "Ring1", "Ring2", "Ring3", "RingTip"
+        ],
+        "Pinky":[
+            "PinkyRoot", "Pinky1", "Pinky2", "Pinky3", "PinkyTip"
+        ],
+        "Thumb":[
+            "ThumbRoot", "Thumb1", "Thumb2", "Thumb3", "ThumbTip"
+        ],
+        "Finger":[
+            "RootFinger", "Finger1", "Finger2", "Finger3", "FingerTip"
+        ],
+        "Foot":[
+            "Ankle", "Ball", "Toe"
+        ],
+        "Tail":[
+            "tail"
+        ]
+    }
+}

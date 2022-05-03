@@ -1,0 +1,49 @@
+    def linearSpacingJoint(self):
+        num_ = self.getLinearNum()
+        axis_ = self.getLinearAxis()
+        for i in self.sel_():
+            self.linear_spacing_joint(i,
+                                        num_,
+                                        axis=axis_
+                                        )
+
+
+    def linear_spacing_joint(self, joint_, num, axis='x'):
+        joints = [joint_, joint_.getChildren()[0]]
+        stJoint = joints[0]
+        stOtherType = stJoint.getAttr('otherType')
+        stSide = stJoint.getAttr('side')
+        enJoint = joints[-1]
+        stTrans_= self.get_trans(stJoint)
+        enTrans_= self.get_trans(enJoint)
+        length_ = self.length(stTrans_, enTrans_)
+        divValue = length_/(num+1)
+
+        if axis:
+            if axis=='x':
+                value = (divValue,0,0)
+            if axis=='y':
+                value = (0,divValue,0)
+            if axis=='z':
+                value = (0,0,divValue)
+            if axis=='-x':
+                value = (-1*divValue,0,0)
+            if axis=='-y':
+                value = (0,-1*divValue,0)
+            if axis=='-z':
+                value = (0,0,-1*divValue)
+        else:
+            value = (divValue,0,0)
+
+        insertList = [stJoint]
+        for i in range(num):
+            localspace = self.space_(stJoint.name(), parent_=insertList[i])
+            localspace.setAttr('t',value)
+            name_ = '{0}{1}{2}'.format(stOtherType, i+1, 'Jnt')
+            pos_ = self.get_trans(localspace)
+            JNT = self.joint_insert(insertList[i], name_, pos_)
+            JNT.attr('type').set(18)
+            JNT.attr('otherType').set('{0}{1}'.format(stOtherType, i+1))
+            JNT.attr('side').set(stSide)
+            delete(localspace)
+            insertList.append(JNT)
