@@ -56,7 +56,8 @@ def GrpMake():
 
 def JntMake(AllCurve,segNumber, Type):
     #pm.rebuildCurve(AllCurve, ch=1, rpo=1, rt=0, end=1, kr=0, kcp=0, kep=1, kt=0, s=segNumber, d=3, tol=0.01)
-    JntList=spine_joint_make(curve_Name=AllCurve, spineName='%s'%(AllCurve.split('_')[0]), joint_count=segNumber, joint_start_n=1,type= Type)
+    JntList=spine_joint_make(curve_Name=AllCurve, spineName='%s'%(AllCurve.replace('IKCrv','')), joint_count=segNumber, joint_start_n=1,type= Type)
+
     return JntList
 
 def NameChange():

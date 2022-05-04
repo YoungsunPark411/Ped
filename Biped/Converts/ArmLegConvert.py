@@ -82,14 +82,20 @@ def DuplicateJnt(JntSel, type):
 def IKCtrlMake(IKJnt):
     # 크기 정하기
     Scale = gn.scaleGet()
-    IKCtrl = gn.ControlMaker('%s%sIKCtrl' % (side, ob), 'circle', MainColor, exGrp=0, size=Scale)
+    if ob == 'Leg':
+        shape = 'Foot'
+        Scale_= 1
+    else:
+        shape = 'circle'
+        Scale_= Scale
+    IKCtrl = gn.ControlMaker('%s%sIKCtrl' % (side, ob), shape, MainColor, exGrp=0, size=Scale_)
     pm.select(IKCtrl[0])
     pm.addAttr(ln="Twist", at='double', dv=0, k=1)
     pm.addAttr(ln="Stretch", at='double', min=0, max=10, dv=0, k=1)
     pm.addAttr(ln="Squash", at='double', min=0, max=10, dv=0, k=1)
     pm.addAttr(ln="UpSlide", at='double', dv=0, k=1)
     pm.addAttr(ln="DnSlide", at='double', dv=0, k=1)
-    pm.addAttr(ln="PVctrlVis", at='double', min=0, max=1, dv=0, k=1)
+    pm.addAttr(ln="PVctrlVis", at='bool', k=1)
     pm.setAttr('%s%sIKCtrl.PVctrlVis' % (side, ob), keyable=0, channelBox=1)
     pm.addAttr(ln="PVStretch", at='double', min=0, max=10, dv=0, k=1)
     if 'Arm' in ob:
@@ -101,14 +107,14 @@ def IKCtrlMake(IKJnt):
         for x in FootFunction:
             pm.addAttr(ln=x, at='double', min=-10, max=10, dv=0, k=1)
         pm.setAttr("%s%sIKCtrl.Follow" % (side, ob), 2)
-    pm.addAttr(ln="ConstCtrlVis", at='double', min=0, max=1, dv=0, k=1)
+    pm.addAttr(ln="ConstCtrlVis", at='bool', k=1)
     pm.setAttr(IKCtrl[0] + '.ConstCtrlVis', keyable=0, channelBox=1)
-    IKConstCtrl = gn.ControlMaker('%s%sIKConstCtrl' % (side, ob), 'hexagon', MainColor, exGrp=0, size=Scale * 1.2)
-    IKSubCtrl = gn.ControlMaker('%s%sIKSubCtrl' % (side, ob), 'circle', SubColor, exGrp=0, size=Scale * 0.8)
-
-    gn.rotate_components(0, 0, 90, nodes=IKCtrl[0])
-    gn.rotate_components(0, 0, 90, nodes=IKConstCtrl[0])
-    gn.rotate_components(0, 0, 90, nodes=IKSubCtrl[0])
+    IKConstCtrl = gn.ControlMaker('%s%sIKConstCtrl' % (side, ob), shape, MainColor, exGrp=0, size=Scale_ * 1.2)
+    IKSubCtrl = gn.ControlMaker('%s%sIKSubCtrl' % (side, ob), shape, SubColor, exGrp=0, size=Scale_ * 0.8)
+    if 'Arm' in ob:
+        gn.rotate_components(0, 0, 90, nodes=IKCtrl[0])
+        gn.rotate_components(0, 0, 90, nodes=IKConstCtrl[0])
+        gn.rotate_components(0, 0, 90, nodes=IKSubCtrl[0])
     return [IKCtrl[0], IKConstCtrl[0], IKSubCtrl[0]]
 
 
@@ -152,6 +158,7 @@ def PolevectorMake(handle, IKJnt):
 
     elif ob == 'Leg':
         pm.addAttr(ln="Follow", at='enum', en='Auto:Hip:Root:Fly:World', k=1)
+        gn.rotate_components(0, 180, 0, nodes=PoleVectorCtrl[0])
     else:
         pass
 
@@ -222,14 +229,20 @@ def IKFKCtrlMake(JntSel):
     pm.addAttr(ln="UpTwistFix", at='double', dv=0, k=1)
     pm.addAttr(ln="MidTwistFix", at='double', dv=0, k=1)
     pm.addAttr(ln="DnTwistFix", at='double', dv=0, k=1)
-    pm.addAttr(ln="AutoHideIKFK", at='enum', en='Off:On', k=1)
-    pm.addAttr(ln="ArcCtrlVis", at='enum', en='Off:On', k=1)
+    pm.addAttr(ln="AutoHideIKFK", at='bool', k=1)
+    pm.addAttr(ln="ArcCtrlVis", at='bool', k=1)
     pm.setAttr(IKFKCtrl[0] + '.AutoHideIKFK', keyable=0, channelBox=1)
     pm.setAttr(IKFKCtrl[0] + '.ArcCtrlVis', keyable=0, channelBox=1)
-    gn.PosCopy(JntSel[-1], IKFKCtrl[1])
-    gn.Mcon(JntSel[-1], IKFKCtrl[1], t=1, r=0, s=0, sh=1, mo=1, pvtCalc=1)
+    if ob == 'Leg':
+        pm.delete(pm.pointConstraint(JntSel[-1], IKFKCtrl[1]))
+        pm.delete(pm.orientConstraint(JntSel[-1].getParent(), IKFKCtrl[1]))
+        gn.Mcon(JntSel[-1], IKFKCtrl[1], t=1, r=0, s=0, sh=1, mo=1, pvtCalc=1)        
+    else:
+        pm.delete(pm.parentConstraint(JntSel[-1], IKFKCtrl[1]))
+        gn.Mcon(JntSel[-1], IKFKCtrl[1], t=1, r=0, s=0, sh=1, mo=1, pvtCalc=1)
     gn.rotate_components(-90, 0, 0, nodes=IKFKCtrl[0])
     gn.translate_components(0, -2 * Scale, 0, nodes=IKFKCtrl[0])
+    
     return IKFKCtrl[0]
 
 
@@ -304,6 +317,10 @@ def CurveToPC(src, tg):
 
 def ArcCtrlMatch(DrvJnt, UpIKCrv, DnIKCrv, ArcPointPos, bs):
     ArcCtrlList = ArcCtrlMake()
+    if side == 'Right':
+        aim_=[-1,0,0]
+    else:
+        aim_=[1,0,0]
 
     UpArcCtrl, MidArcCtrl, DnArcCtrl = ArcCtrlList[0], ArcCtrlList[1], ArcCtrlList[2]
     for x in ArcCtrlList:
@@ -312,7 +329,7 @@ def ArcCtrlMatch(DrvJnt, UpIKCrv, DnIKCrv, ArcPointPos, bs):
         if x == UpArcCtrl:
             pm.delete(pm.pointConstraint(DrvJnt[0], DrvJnt[1], grp_[0], mo=0))
             # gn.Mcon(UpIKCrv,grp_[0],t=1, r=0, s=0, sh=1, mo=1, pvtCalc=1)
-            tc = pm.tangentConstraint(UpIKCrv, grp_, wut=2, wuo=DrvJnt[0])
+            tc = pm.tangentConstraint(UpIKCrv, grp_, wut=2, wuo=DrvJnt[0],aim=aim_)
             tg = grp_[0]
             src = UpIKCrv
             pc = CurveToPC(src, tg)
@@ -330,7 +347,7 @@ def ArcCtrlMatch(DrvJnt, UpIKCrv, DnIKCrv, ArcPointPos, bs):
         elif x == DnArcCtrl:
             pm.delete(pm.pointConstraint(DrvJnt[1], DrvJnt[2], grp_[0], mo=0))
             # gn.Mcon(DnIKCrv,grp_[0],t=1, r=0, s=0, sh=1, mo=1, pvtCalc=1)
-            tc2 = pm.tangentConstraint(DnIKCrv, grp_, wut=2, wuo=DrvJnt[-1])
+            tc2 = pm.tangentConstraint(DnIKCrv, grp_, wut=2, wuo=DrvJnt[-1],aim=aim_)
             tg = grp_[0]
             src = DnIKCrv
             pc = CurveToPC(src, tg)
@@ -350,7 +367,7 @@ def ArcCurveMake(DrvJnt):
     # ArcPosConnect
     PosList = []
     for x in range(len(DrvJnt)):
-        Pos = pm.createNode('transform', n=DrvJnt[x].replace('Jnt', 'ArcPos').replace('|', ''))
+        Pos = pm.createNode('transform', n=DrvJnt[x].replace('DrvJnt', 'ArcPos').replace('|', ''))
         pm.pointConstraint(DrvJnt[x], Pos, mo=0)
         PosList.append(Pos)
 
@@ -980,8 +997,8 @@ def MakeClavicleCtrlRig():
         ClaJntSel.append(jnt_)
 
     Scale = gn.scaleGet()
-    ClavicleCtrl = gn.ControlMaker('%sCtrl' %ObjName, 'circle', MainColor, exGrp=0, size=Scale*2)
-    ClavicleSubCtrl = gn.ControlMaker('%sSubCtrl' % ObjName, 'diamond', SubColor, exGrp=0, size=Scale*2)
+    ClavicleCtrl = gn.ControlMaker('%sCtrl' %ObjName, 'circle', MainColor, exGrp=0, size=Scale*1.2)
+    ClavicleSubCtrl = gn.ControlMaker('%sSubCtrl' % ObjName, 'diamond', SubColor, exGrp=0, size=Scale*1.2)
     gn.PosCopy(ClaJntSel[0], ClavicleCtrl[0])
     gn.PosCopy(ClaJntSel[1], ClavicleSubCtrl[0])
     pm.parent(ClavicleSubCtrl[0], ClavicleCtrl[0])
@@ -989,7 +1006,8 @@ def MakeClavicleCtrlRig():
     gn.Mcon(ClavicleSubCtrl[0], ClaJntSel[1], t=1, r=1, s=1, sh=1,mo=1, pvtCalc=1)
     gn.rotate_components(0, 0, 90, nodes=ClavicleCtrl[0])
     gn.rotate_components(0, 0, 90, nodes=ClavicleSubCtrl[0])
-    
+    pm.addAttr(ClavicleCtrl[0],ln="SubCtrlVis", at='bool', k=1)
+    pm.setAttr(ClavicleCtrl[0].SubCtrlVis,0, keyable=0, channelBox=1)
     
     return ClavicleCtrl[0], ClavicleSubCtrl[0]
     
@@ -1063,7 +1081,7 @@ def ArmLegRig(JntSel):
 
     ArcCrvs = [DnStSq.getParent(), UpStSq.getParent()]
     pm.parent(PVfixGrp,  ArcHandles, IKPosGrp, ArcPosList, ArcCrvs, SysGrp)
-    pm.group(ArcPosList)
+    pm.group(ArcPosList,n='%s%sArcPos' % (side, ob))
 
     IKCtrl.PVctrlVis >> PoleVectorCtrl.getParent().visibility
 
@@ -1098,9 +1116,11 @@ def ArmLegRig(JntSel):
     if ob == 'Arm':
         ObjRootCtrl, ObjRootSubCtrl = MakeClavicleCtrlRig()
         ObjRootCtrlGrp = gn.addNPO(ObjRootCtrl,'Grp')
-        ObjRootSubCtrlGrp = gn.addNPO(ObjRootSubCtrl,'Grp')        
+        ObjRootSubCtrlGrp = gn.addNPO(ObjRootSubCtrl,'Grp') 
+        ObjRootCtrl.SubCtrlVis>>  ObjRootSubCtrlGrp[0].visibility     
     else:
         ObjRootCtrl = MakeHipCtrlRig(JntSel)
+        gn.rotate_components(180, 0, 0, nodes=ObjRootCtrl)
         ObjRootCtrlGrp = gn.addNPO(ObjRootCtrl,'Grp')
     
     for x in [CtrlGrp,SysGrp]:
@@ -1111,11 +1131,21 @@ def ArmLegRig(JntSel):
         pm.parent(RootCNSGrp,x)
     pm.parent(ObjRootCtrlGrp,CtrlGrp)
     
+    # 손목 로테이트 컨스트레인
+    wristPB=pm.createNode('pairBlend', n= JntSel[-1] + 'RotPB')
+    IKJnt[-1].r>>wristPB.ir1
+    FKJnt[-1].r>>wristPB.ir2
+    IKFKCtrl.IKFK>>wristPB.w
+    wristPB.outRotate>>JntSel[-1].r
+    gn.Mcon(IKCtrlPos, IKJnt[-1], r=1, mo=1, pvtCalc=1)
+    
     if ob == 'Arm':
         if pm.objExists('ChestConstGrp'):   
             pm.parent(RigGrp, 'ChestConstGrp')
-    else:
-        pm.parent(RigGrp,ObjRootCtrl)
+    elif ob == 'Leg':
+        if pm.objExists('HipCtrl'):   
+            pm.parent(RigGrp, 'HipCtrl')
+
         
 
 
@@ -1127,7 +1157,7 @@ def ArmLegRig(JntSel):
 
 #ObjName = ['LeftArm','RightArm','LeftLeg','RightLeg']    
 def ArmLegRigConvert():
-    ObjName = ['LeftArm']     
+    ObjName = ['LeftArm','RightArm','LeftLeg','RightLeg']    
     for i in ObjName:
         global side,ob,parts,colors,MainColor, SubColor, fingerMainColor
         side,ob,parts,colors=NameExtraction(i)

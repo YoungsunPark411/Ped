@@ -64,7 +64,7 @@ class myUIClass(QWidget):
         SpineConvert.SpineRig()
         NeckConvert.NeckRig()
         ArmLegConvert.ArmLegRigConvert()
-        #pm.delete('Biped_Guide')
+        pm.delete('Biped_Guide')
         
 
 

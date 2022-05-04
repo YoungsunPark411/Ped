@@ -116,7 +116,7 @@ def CurvePointToJnt(Crv):
         jointList.append(createName)
         pm.joint(p=jointPosition[x],n=createName)
     
-    Axis_=config_["Axis"]
+    Axis_=config_["FingerAxis"]
     if jointList:
         pm.parent(jointList[0],w=1)
         pm.makeIdentity (apply=1,t =0,r= 1 ,s =0 ,n =0 ,pn= 1)
@@ -163,13 +163,13 @@ def AllBindJntMake():
 #Joint parent Á¤¸® 
 def OrganizeJoint():
     pm.parent('LeftClavicleJnt','Neck1Jnt','ChestJnt')
-    pm.delete('LeftClavicleTipJnt','LeftUpArmSeg4Jnt','LeftDnLegSeg4Jnt','LeftUpLegSeg4Jnt')
+    pm.delete('LeftClavicleTipJnt','LeftUpArmSeg4Jnt','LeftUpLegSeg4Jnt')
     wristJnt=pm.duplicate('LeftDnArmSeg4Jnt',n='LeftWristJnt')
     pm.parent(wristJnt,'LeftDnArmSeg4Jnt')
     pm.parent('LeftShoulderJnt','LeftClavicleSubJnt')
     pm.parent('LeftElbowJnt','LeftUpArmSeg3Jnt')
     pm.parent('LeftKneeJnt','LeftUpLegSeg3Jnt')
-    pm.parent('LeftAnkleJnt','LeftDnLegSeg3Jnt')
+    pm.parent('LeftAnkleJnt','LeftDnLegSeg4Jnt')
     pm.parent('Tongue1Jnt','JawJnt','HeadJnt')
     pm.parent('LeftThighJnt','RootJnt')
     pm.parent('LeftThumbRootJnt','LeftIndexRootJnt','LeftMiddleRootJnt','LeftRingRootJnt','LeftPinkyRootJnt','LeftWristJnt')

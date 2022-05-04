@@ -15,9 +15,9 @@
         "xzy",
         "zdown"
     ],
-    "LegAxis":[
+    "FingerAxis":[
         "xzy",
-        "zdown"
+        "yup"
     ],
     "mirrorSide":{
         "Left":"Right",
@@ -116,10 +116,7 @@
             "PinkyRoot", "Pinky1", "Pinky2", "Pinky3", "PinkyTip"
         ],
         "Thumb":[
-            "ThumbRoot", "Thumb1", "Thumb2", "Thumb3", "ThumbTip"
-        ],
-        "Finger":[
-            "RootFinger", "Finger1", "Finger2", "Finger3", "FingerTip"
+            "ThumbRoot", "Thumb1", "Thumb2", "ThumbTip"
         ],
         "Foot":[
             "Ankle", "Ball", "Toe"
