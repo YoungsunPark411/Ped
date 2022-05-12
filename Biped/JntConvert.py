@@ -126,6 +126,15 @@ def CurvePointToJnt(Crv):
         pm.setAttr ("%s.jointOrientX"%jointList[-1], 0)
         pm.setAttr ("%s.jointOrientY"%jointList[-1], 0)
         pm.setAttr ("%s.jointOrientZ"%jointList[-1], 0)
+    if 'Thumb' in str(jointList[0]):
+        pm.parent(jointList[1],w=1)
+        pm.setAttr ("%s.jointOrientX"%jointList[0], 0)
+        pm.setAttr ("%s.jointOrientY"%jointList[0], 0)
+        pm.setAttr ("%s.jointOrientZ"%jointList[0], 0)
+        gn.PosCopy(jointList[1],jointList[0])
+        pm.select(jointList[0])
+        pm.makeIdentity (apply=1,t =0,r= 1 ,s =0 ,n =0 ,pn= 1)
+        pm.parent(jointList[1],jointList[0])
     pm.select(jointList)
 
     return jointList
@@ -181,4 +190,6 @@ def OrganizeJoint():
 def JntMake_Organize():
     AllBindJntMake()
     OrganizeJoint()
+    
+
 

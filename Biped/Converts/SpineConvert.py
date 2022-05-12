@@ -188,6 +188,7 @@ def SpineRig():
     SpineMidCtrl.SpineBlend>>MidPbGrp.pbw
     
     #Á¤¸® 
+    SysGrp.v.set(0)
     pm.parent(Crv.replace('Crv','ChkCrv'),handle,SysGrp)
     pm.parent(IKJntGrp,SysGrp)
     pm.parent(CtrlGrp,RigGrp)

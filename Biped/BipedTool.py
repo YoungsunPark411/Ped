@@ -27,6 +27,7 @@ from Converts import WorldConvert
 from Converts import SpineConvert
 from Converts import NeckConvert
 from Converts import ArmLegConvert
+from Converts import FingerConvert
 
 try:
     from imp import *
@@ -39,6 +40,7 @@ reload(WorldConvert)
 reload(SpineConvert)
 reload(NeckConvert)
 reload(ArmLegConvert)
+reload(FingerConvert)
       
 class myUIClass(QWidget):
     def __init__(self, *args, **kwargs):
@@ -60,13 +62,14 @@ class myUIClass(QWidget):
         JntConvert.JntMake_Organize()
         
     def Convert(self):
+
         WorldConvert.WorldSetting()
         SpineConvert.SpineRig()
         NeckConvert.NeckRig()
         ArmLegConvert.ArmLegRigConvert()
-        pm.delete('Biped_Guide')
+        FingerConvert.FingerConvert()
+        #pm.delete('Biped_Guide')
         
-
 
         
 def maya_main_window():
@@ -82,3 +85,4 @@ def runWin():
     myWin = myUIClass(parent=maya_main_window())
     myWin.show()
 runWin()
+

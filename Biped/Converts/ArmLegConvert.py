@@ -23,8 +23,8 @@ import FilePathImport
 # reload(kb)
 # reload(st)
 
-Scale=gn.scaleGet()
-#Scale = 3
+
+
 def FromJson():      
     config_ = FilePathImport.loadConfig_("BipedName.json")
     return config_
@@ -84,7 +84,7 @@ def IKCtrlMake(IKJnt):
     Scale = gn.scaleGet()
     if ob == 'Leg':
         shape = 'Foot'
-        Scale_= 1
+        Scale_= Scale/5
     else:
         shape = 'circle'
         Scale_= Scale
@@ -174,8 +174,8 @@ def IKRig(IKJnt):
     IKHandle = pm.ikHandle(sj=IKJnt[0], ee=IKJnt[-1], n='%s%sIKHandle' % (side, ob), sol='ikRPsolver', ccv=0)
     IKPos = pm.createNode('transform', n='%s%sIKPos' % (side, ob))
     gn.PosCopy(IKCtrl, IKPos)
-    pm.parent(IKPos, IKCtrl)
-    gn.Mcon(IKSubCtrl, IKHandle[0], t=1, mo=0, pvtCalc=1)
+    pm.parent(IKPos, IKSubCtrl)
+    gn.Mcon(IKPos, IKHandle[0], t=1, mo=0, pvtCalc=1)
     poleCtrl = PolevectorMake(IKHandle[0], IKJnt)
     return [IKCtrlList, poleCtrl, IKPos]
 
@@ -955,7 +955,7 @@ def BindJntScaleConnect(FKCtrls, UpArcJnt, DnArcJnt, JntSel, IKFKCtrl):
 
     for i, j, k in zip(FKCtrl, ArcJntList, JntSel_List):
         PartJntSel = gn.jntList(k, len(j))
-        for x in range(len(j) - 1):
+        for x in range(len(j)):
             F_bc = blendColors_(PartJntSel[x].replace('Jnt', 'Scale'))
             IKFKCtrl.IKFK >> F_bc.blender
             i.sy >> F_bc.color1G
@@ -1131,15 +1131,16 @@ def ArmLegRig(JntSel):
         pm.parent(RootCNSGrp,x)
     pm.parent(ObjRootCtrlGrp,CtrlGrp)
     
-    # 손목 로테이트 컨스트레인
-    wristPB=pm.createNode('pairBlend', n= JntSel[-1] + 'RotPB')
-    IKJnt[-1].r>>wristPB.ir1
-    FKJnt[-1].r>>wristPB.ir2
-    IKFKCtrl.IKFK>>wristPB.w
-    wristPB.outRotate>>JntSel[-1].r
-    gn.Mcon(IKCtrlPos, IKJnt[-1], r=1, mo=1, pvtCalc=1)
+    
     
     if ob == 'Arm':
+        # 손목 로테이트 컨스트레인
+        wristPB=pm.createNode('pairBlend', n= JntSel[-1] + 'RotPB')
+        IKJnt[-1].r>>wristPB.ir1
+        FKJnt[-1].r>>wristPB.ir2
+        IKFKCtrl.IKFK>>wristPB.w
+        wristPB.outRotate>>JntSel[-1].r
+        gn.Mcon(IKCtrlPos, IKJnt[-1], r=1, mo=1, pvtCalc=1)
         if pm.objExists('ChestConstGrp'):   
             pm.parent(RigGrp, 'ChestConstGrp')
     elif ob == 'Leg':
@@ -1153,10 +1154,14 @@ def ArmLegRig(JntSel):
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     
+
+
 # 바인드 조인트의 첫번째, 중간, 마지막 조인트를 누르고 실행!
 
 #ObjName = ['LeftArm','RightArm','LeftLeg','RightLeg']    
 def ArmLegRigConvert():
+    global Scale
+    Scale=gn.scaleGet()
     ObjName = ['LeftArm','RightArm','LeftLeg','RightLeg']    
     for i in ObjName:
         global side,ob,parts,colors,MainColor, SubColor, fingerMainColor

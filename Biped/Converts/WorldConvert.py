@@ -44,7 +44,7 @@ def WorldSetting():
     gn.rotate_components(90, 0, 0, nodes=flyCtrl[0])
     gn.translate_components(0, 0, -2 * Scale, nodes=flyCtrl[0])
     
-        
+    
     needGrp=[worldCtrl[0],moveCtrl[0],flyCtrl[0],rootCtrl[0]]
     
     for x in needGrp:
@@ -54,6 +54,8 @@ def WorldSetting():
         pm.parent('RootJnt',bindJntGrp)
     else:
         pass
+        
+    rigSysGrp.v.set(0)
         
 #WorldSetting()
         

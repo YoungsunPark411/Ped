@@ -19,7 +19,7 @@ import NameExtraction as ne
 from imp import reload
 # reload(gn)
 # reload(st)
-Scale=gn.scaleGet()
+#Scale=gn.scaleGet()
 
 # IK조인트만들기
 def DuplicateJnt(JntSel, type):
@@ -66,7 +66,9 @@ def space_(name_, parent_=None):
     return space_
 
         
-def NeckRig():
+def NeckRig():    
+    global Scale
+    Scale=gn.scaleGet()
     ObjName = 'Neck'
     side,ob,parts,colors=ne.NameExtraction(ObjName)
 
