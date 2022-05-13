@@ -155,14 +155,17 @@ def PolevectorMake(handle, IKJnt):
 
     if ob == 'Arm':
         pm.addAttr(ln="Follow", at='enum', en='Auto:Chest:Root:Fly:World', k=1)
+        gn.translate_components(0, 0,  Scale, nodes=PoleVectorCtrl[0])
 
     elif ob == 'Leg':
         pm.addAttr(ln="Follow", at='enum', en='Auto:Hip:Root:Fly:World', k=1)
         gn.rotate_components(0, 180, 0, nodes=PoleVectorCtrl[0])
+        gn.translate_components(0, 0, -1 * Scale, nodes=PoleVectorCtrl[0])
     else:
         pass
 
     gn.PosCopy(IKJnt[1], PoleVectorCtrl[0])
+    PoleVectorCtrl[0].tz.set(0.5)
     gn.addNPO(PoleVectorCtrl[0], 'Grp')
     pm.poleVectorConstraint(PoleVectorCtrl[0], handle, n='%sPoleVectorConst' % handle.replace('IKHandle', ''))
     return PoleVectorCtrl[0]
@@ -1010,7 +1013,12 @@ def MakeClavicleCtrlRig():
     pm.setAttr(ClavicleCtrl[0].SubCtrlVis,0, keyable=0, channelBox=1)
     
     return ClavicleCtrl[0], ClavicleSubCtrl[0]
-    
+
+def AnotationRIg(PoleVectorCtrl):
+
+    pm.annotate(PoleVectorCtrl, tx='' )
+
+
 
 def ArmLegRig(JntSel):
     #IK 조인트, 컨트롤 
@@ -1174,3 +1182,7 @@ def ArmLegRigConvert():
         ArmLegRig(JntSel)
 
 #ArmLegRigConvert()
+
+tt=pm.ls(sl=1)[0]
+trans = xform(tt, q=1, ws=1, rp=1 )
+ii=pm.annotate(tt, tx='t', p=trans )

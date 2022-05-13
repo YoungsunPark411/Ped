@@ -223,29 +223,68 @@ def FootConvert():
         shape = 'diamond'
         FKBallCtrl_ = gn.ControlMaker('%sBallFKCtrl' % (side), shape, MainColor, exGrp=0, size=Scale)
         FKBallCtrl=FKBallCtrl_[0]
-        gn.PosCopy()
-        [pm.setAttr(FKBallCtrl+ss, keyable=0, channelBox=0) for ss in ['scaleX','scaleY','scaleZ']]
+        gn.PosCopy(FKJnt[1],FKBallCtrl)
+        [pm.setAttr(FKBallCtrl+'.'+ss, keyable=0, channelBox=0) for ss in ['scaleX','scaleY','scaleZ']]
         pm.parent(FKBallCtrl,IKScaleGrp)
         gn.addNPO(FKBallCtrl,'Grp')
         gn.Mcon(FKBallCtrl, FKJnt[1], t=1, r=1, mo=1, pvtCalc=1)
+        gn.rotate_components(90, 90, 0, nodes=FKBallCtrl)
         
         #IKBallCtrl 만들기 
-        IKBallCtrl_ = gn.ControlMaker('%sBallIKCtrl' % (side), shape, MainColor, exGrp=0, size=Scale)
+        IKBallCtrl_ = pm.duplicate(FKBallCtrl,n=FKBallCtrl.replace('FK','IK'))
         IKBallCtrl=IKBallCtrl_[0]
-        '''
-        sel = pm.ls(sl=1)
+        pm.parent(IKBallCtrl,IKJntGrp)
+        
+        IKBallCnsGrp=gn.addNPO(IKBallCtrl,'CnsGrp')
+        IKBallGrp=gn.addNPO(IKBallCtrl,'Grp')
+        gn.Mcon(IKJnt[0],IKBallCnsGrp[0], t=1, r=1, mo=1, pvtCalc=1)
+        gn.Mcon(IKJnt[1],IKBallGrp[0], t=1, r=1, mo=1, pvtCalc=1)
+        
+        
+        #BallDrvJnt의 translate랑 rotate 끊기 
+        pb=DrvJnt[1].t.inputs()
+        tt=DrvJnt[1].t.inputs(p=1)
+        tt[0]//DrvJnt[1].t
+        rr=DrvJnt[1].r.inputs(p=1)
+        rr[0]//DrvJnt[1].r
 
-        tt= sel[0].t
-        oo=tt.outputs(p=1)
-        '''
+        #trans 매트릭스 연결
+        name=DrvJnt[1].replace('DrvJnt','')
+        tmm=pm.createNode('multMatrix',n='%sTransMM'% name)
+        tdm=pm.createNode('decomposeMatrix',n='%sTransDM'% name)
+
+        IKBallCtrl.m >> tmm.i[0]
+        IKBallGrp[0].m >> tmm.i[1]
+        tmm.o >> tdm.imat
         
         
+        tdm.outputTranslate>>pb[0].inTranslate1
+
+        #rotate 매트릭스 연결
+        rmm=pm.createNode('multMatrix',n='%sRotMM'% name)
+        rdm=pm.createNode('decomposeMatrix',n='%sRotDM'% name)
+
+        IKBallCtrl.m >> rmm.i[0]
+        IKBallGrp[0].m >> rmm.i[1]
+        rmm.o >> rdm.imat
         
+        tdm.outputRotate>>pb[0].inRotate1
+        
+        gn.Mcon(IKBallCtrl,DrvJnt[1], t=1, r=1, mo=1, pvtCalc=1)
+
+        #Auto 하이드 연결 
+        cd_= IKFKCtrl.AutoHideIKFK.outputs()
+        cd= cd_[0]
+        cd.ocr >> FKBallCtrl.getParent().v
+        cd.ocg >> IKBallCtrl.getParent().v
+        
+
         #정리
         pm.parent(FootRigGrp,side+'LegRigGrp')
+        [pm.setAttr(x+'.visibility', 0) for x in [IKJnt[0],FKJnt[0],DrvJnt[0]]]
     
 FootConvert() 
-    
+
     
     
     
