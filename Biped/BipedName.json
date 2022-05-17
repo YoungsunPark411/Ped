@@ -128,5 +128,42 @@
         "Tail":[
             "tail"
         ]
+    },
+    
+    "follow":{
+        "HeadCtrl":[
+            "orient", ["NeckMidCtrl", "BodyIKCtrl", "RootCtrl", "FlyCtrl"]
+        ],
+        "LeftArmIKCtrl":[
+            "parent", ["HeadCtrl", "ChestConstGrp", "HipCtrl", "RootCtrl", "FlyCtrl"] 
+        ],
+        "LeftShoulderFKCtrl":[
+            "orient", ["LeftClavicleSubCtrl", "ChestConstGrp", "RootCtrl", "FlyCtrl", "WorldCtrl"]
+        ],
+        "LeftArmPoleVectorCtrl":[
+            "parent", ["LeftArmPVFixPos", "ChestConstGrp", "RootCtrl", "FlyCtrl", "WorldCtrl"]
+        ],
+        "LeftLegIKCtrl":[
+            "parent", ["HipCtrl", "RootCtrl", "FlyCtrl", "WorldCtrl"]
+        ],        
+        "LeftLegPoleVectorCtrl":[
+            "parent", ["LeftLegPVFixPos", "HipCtrl", "RootCtrl", "FlyCtrl", "WorldCtrl"]
+        ],
+        "RightArmIKCtrl":[
+            "parent", ["HeadCtrl", "ChestConstGrp", "HipCtrl", "RootCtrl", "FlyCtrl"] 
+        ],
+        "RightShoulderFKCtrl":[
+            "orient", ["RightClavicleSubCtrl", "ChestConstGrp", "RootCtrl", "FlyCtrl", "WorldCtrl"]
+        ],
+        "RightArmPoleVectorCtrl":[
+            "parent", ["RightArmPVFixPos", "ChestConstGrp", "RootCtrl", "FlyCtrl", "WorldCtrl"]
+        ],
+        "RightLegIKCtrl":[
+            "parent", ["HipCtrl", "RootCtrl", "FlyCtrl", "WorldCtrl"]
+        ],        
+        "RightLegPoleVectorCtrl":[
+            "parent", ["RightLegPVFixPos", "HipCtrl", "RootCtrl", "FlyCtrl", "WorldCtrl"]
+        ]
+
     }
 }

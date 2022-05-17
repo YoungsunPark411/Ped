@@ -1116,9 +1116,12 @@ def ArmLegRig(JntSel):
     
     IKChkCrvGrp = pm.createNode('transform', n='%s%sIKChkCrvGrp' % (side, ob) ,p=RigGrp)
     pm.parent( UpIKCrv.replace('Crv','ChkCrv'), DnIKCrv.replace('Crv','ChkCrv'), IKChkCrvGrp)
+    IKChkCrvGrp.v.set(0)
     
-    pm.parent(UpIKCrv, DnIKCrv,'%s%sIKCrvGrp'% (side, ob))
-    pm.parent('%s%sIKCrvGrp'% (side, ob),RigGrp)
+    IKCrvGrp=pm.PyNode('%s%sIKCrvGrp'% (side, ob))
+    pm.parent(UpIKCrv, DnIKCrv,IKCrvGrp)
+    pm.parent(IKCrvGrp,RigGrp)
+    IKCrvGrp.v.set(0)
     
     # 클래비클, 힙 컨트롤 만들기
     if ob == 'Arm':
@@ -1183,6 +1186,3 @@ def ArmLegRigConvert():
 
 #ArmLegRigConvert()
 
-tt=pm.ls(sl=1)[0]
-trans = xform(tt, q=1, ws=1, rp=1 )
-ii=pm.annotate(tt, tx='t', p=trans )

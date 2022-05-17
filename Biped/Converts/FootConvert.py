@@ -83,16 +83,17 @@ def FootIkJntRig(IKJnt,IKCtrl):
     pm.setAttr(FootSysGrp+'.visibility',0)
     gn.PosCopy(IKCtrl,FootSysGrp)
     pm.parent(FootSysGrp,IKCtrl)
-    #ToePvGrp=pm.createNode('transform',n='%sToePvGrp'%side)
     ToeMovePivGrp=pm.createNode('transform',n='%sToeMovePivGrp'%side)
     pm.parent(ToeMovePivGrp,FootSysGrp)
     NameList=['InRoll','OutRoll','HeelRollPiv','ToeRollPiv','BallPiv','FootRoll','BallRoll']
     ToeGrpList=[]
+    MovePosList=[]
     for x in NameList:
         a=pm.createNode('transform',n='%s%sPos'%(side,x))
         pm.parent(a,FootSysGrp)
         ToeGrpList.append(a)
         b = pm.createNode('transform', n='%s%sMovePos' % (side, x))
+        MovePosList.append(b)
         pm.parent(b,ToeMovePivGrp)
         pm.connectAttr(b+'.center',a+'.rotatePivot')
         pm.connectAttr(b + '.center', a + '.scalePivot')
@@ -108,7 +109,8 @@ def FootIkJntRig(IKJnt,IKCtrl):
     
     #pm.poleVectorConstraint('%sLegPoleVectorCtrl'%side,IKHandle1[0])
     InRoll, OutRoll, HeelRollPiv, ToeRollPiv, BallPiv, FootRoll, BallRoll = ToeGrpList[0],ToeGrpList[1],ToeGrpList[2],ToeGrpList[3],ToeGrpList[4],ToeGrpList[5],ToeGrpList[6]
-   
+    InRollMV, OutRollMV, HeelRollPivMV, ToeRollPivMV, BallPivMV, FootRollMV, BallRollMV = MovePosList[0],MovePosList[1],MovePosList[2],MovePosList[3],MovePosList[4],MovePosList[5],MovePosList[6]
+
     #FootRoll
     pm.setDrivenKeyframe(HeelRollPiv+'.rotateX', cd=IKCtrl + '.FootRoll', dv=0, v=0)
     pm.setDrivenKeyframe(HeelRollPiv+'.rotateX',cd=IKCtrl+'.FootRoll',dv=-10, v=-50 )
@@ -148,6 +150,9 @@ def FootIkJntRig(IKJnt,IKCtrl):
     
     LegIKPos=pm.PyNode(side+'LegIKPos')
     gn.Mcon(FootRoll, LegIKPos, t=1, mo=1, pvtCalc=1)
+    
+    return InRollMV, OutRollMV, HeelRollPivMV, ToeRollPivMV, BallPivMV, FootRollMV, BallRollMV
+    
     
  
 def FKFootRig(JntSel,FKJnt,IKJnt,DrvJnt):
@@ -217,7 +222,7 @@ def FootConvert():
             gn.Mcon(x, y, t=1, r=1, mo=1, pvtCalc=1)
 
         # IK 리깅 , Foot 채널 연결
-        FootIkJntRig(IKJnt,IKCtrl)
+        InRollMV, OutRollMV, HeelRollPivMV, ToeRollPivMV, BallPivMV, FootRollMV, BallRollMV = FootIkJntRig(IKJnt,IKCtrl)
         
         # FKBallCtrl 만들기 
         shape = 'diamond'
@@ -278,14 +283,32 @@ def FootConvert():
         cd.ocr >> FKBallCtrl.getParent().v
         cd.ocg >> IKBallCtrl.getParent().v
         
+        #발 로테이트 가이드 위치로
+        InGuide=pm.PyNode(side+'Foot_In_Guide')
+        OutGuide=pm.PyNode(side+'Foot_Out_Guide')
+        BackGuide=pm.PyNode(side+'Foot_Back_Guide')
+        
+        guide_=[InGuide,OutGuide,BackGuide]
+        RotMVPos_=[InRollMV,OutRollMV,HeelRollPivMV]
+        for i,x in zip(guide_,RotMVPos_):
+            trans_=pm.xform(i, t=True, q=True, ws=True)
+            pm.xform(x, t=(trans_[0],trans_[1],trans_[2]))
+        
+        for x in [ToeRollPivMV]:            
+            trans_=pm.xform(JntSel[-1], t=True, q=True, ws=True)
+            pm.xform(x, t=(trans_[0],trans_[1],trans_[2]))   
 
+        for x in [BallPivMV, FootRollMV, BallRollMV]:
+            trans_=pm.xform(JntSel[1], t=True, q=True, ws=True)
+            pm.xform(x, t=(trans_[0],trans_[1],trans_[2]))
+
+        
         #정리
         pm.parent(FootRigGrp,side+'LegRigGrp')
         [pm.setAttr(x+'.visibility', 0) for x in [IKJnt[0],FKJnt[0],DrvJnt[0]]]
     
-FootConvert() 
+#FootConvert() 
 
-    
     
     
     

@@ -1,6 +1,7 @@
-# -*- coding: utf-8 -*-
+# -*- coding: cp949 -*-
 import maya.OpenMayaUI as omui
 from pymel.core import *
+import pymel.core as pm
 import pymel.core.datatypes as dt
 
 from PySide2.QtCore import * 
@@ -21,27 +22,65 @@ if path_ in sys.path:
 else:
     sys.path.insert(0, path_)
 
-import BipedUI
+#import BipedUI
 import JntConvert
 from Converts import WorldConvert
 from Converts import SpineConvert
 from Converts import NeckConvert
 from Converts import ArmLegConvert
 from Converts import FingerConvert
+from Converts import FootConvert
+from Converts import MirrorCurve
+from Converts import Follow
 
-try:
-    from imp import *
-except:
-    pass
     
-reload(BipedUI)
-reload(JntConvert)
-reload(WorldConvert)
-reload(SpineConvert)
-reload(NeckConvert)
-reload(ArmLegConvert)
-reload(FingerConvert)
-      
+#reload(BipedUI)
+# reload(JntConvert)
+# reload(WorldConvert)
+# reload(SpineConvert)
+# reload(NeckConvert)
+# reload(ArmLegConvert)
+# reload(FingerConvert)
+# reload(FootConvert)
+# reload(MirrorCurve)
+# reload(Follow)
+
+
+def GuideImport():
+    pm.select(cl=1)      
+    GuideFile='boneped_guide.mb'
+    GuideFileFath='{}/{}'.format(path_, GuideFile)
+    pm.importFile(GuideFileFath)
+        
+def BindJntConvert():
+    JntConvert.JntMake_Organize()
+        
+def Convert():
+
+    WorldConvert.WorldSetting()
+    SpineConvert.SpineRig()
+    NeckConvert.NeckRig()
+    ArmLegConvert.ArmLegRigConvert()
+    FingerConvert.FingerConvert()
+    FootConvert.FootConvert()
+    pm.delete('Biped_Guide',pm.ls('Biped_Guide*'),pm.ls('*',type='tweak'))
+    MirrorCurve.TransMirrorCurve()
+    Follow.FollowRig()
+    
+
+def UI():
+    Dialog = 'BipedUI'
+
+    if pm.window(Dialog, exists=True):
+        pm.deleteUI(Dialog, window=True)
+
+    aa = pm.loadUI(uiFile='D:/Ped/Biped/BipedUI.ui')
+    pm.showWindow(aa)
+
+UI()
+
+
+'''
 class myUIClass(QWidget):
     def __init__(self, *args, **kwargs):
         super(myUIClass, self).__init__(*args, **kwargs)
@@ -68,7 +107,8 @@ class myUIClass(QWidget):
         NeckConvert.NeckRig()
         ArmLegConvert.ArmLegRigConvert()
         FingerConvert.FingerConvert()
-        #pm.delete('Biped_Guide')
+        FootConvert.FootConvert()
+        pm.delete('Biped_Guide')
         
 
         
@@ -85,4 +125,4 @@ def runWin():
     myWin = myUIClass(parent=maya_main_window())
     myWin.show()
 runWin()
-
+'''

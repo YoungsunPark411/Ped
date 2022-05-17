@@ -44,7 +44,7 @@ def CtrlMake():
 
     Scale = gn.scaleGet()
 
-    HeadCtrl = gn.ControlMaker('HeadCtrl', 'circle', 21, exGrp=0, size=Scale)
+    HeadCtrl = gn.ControlMaker('HeadCtrl', 'circle', 21, exGrp=0, size=Scale*2)
     pm.addAttr(ln="Stretch", at='double', min=0, max=10, dv=0, k=1)
     pm.addAttr(ln="Squash", at='double', min=0, max=10, dv=0, k=1)
     pm.addAttr(ln="Follow", at='enum', en='Neck:Body:Root:Fly', k=1)
@@ -56,6 +56,9 @@ def CtrlMake():
     
     NeckMidCtrl = gn.ControlMaker('NeckMidCtrl', 'neck', 17, exGrp=0, size=Scale*0.1)
     NeckCtrl = gn.ControlMaker('NeckCtrl', 'neck', 17, exGrp=0, size=Scale*0.2)
+    
+    gn.translate_components(0, -1.2 * Scale, 0, nodes=NeckMidCtrl[0])
+    gn.translate_components(0, -1.2 * Scale, 0, nodes=NeckCtrl[0])
       
     return NeckCtrl[0],NeckMidCtrl[0],HeadCtrl[0]
 
@@ -175,6 +178,7 @@ def NeckRig():
     
     
     #Á¤¸® 
+    SysGrp.v.set(0)
     pm.parent(Crv.replace('Crv','ChkCrv'),handle,SysGrp)
     pm.parent(IKJntGrp,SysGrp)
     pm.parent(CtrlGrp,RigGrp)
